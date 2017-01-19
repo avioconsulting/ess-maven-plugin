@@ -5,18 +5,18 @@ import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugin.MojoFailureException
 import org.apache.maven.plugins.annotations.Mojo
 import weblogic.management.scripting.utils.WLSTInterpreter
-import weblogic.tools.maven.plugins.configure.WLSTClientMojo
 
 @Mojo(name='foo')
-class FooMojo extends WLSTClientMojo {
+class FooMojo extends AbstractMojo {
     void execute() throws MojoExecutionException, MojoFailureException {
         this.log.info('testing out stuff')
-        def scriptLines = [
-                'connect(url=\'t3://localhost:7001\', username=\'weblogic\', password=\'oracle1234\')',
-                'domainRuntime()',
-                "manageSchedulerJobDefn('SHOW', 'EssNativeHostingApp')"
+        def props = [
+                (WLSTInterpreter.ENABLE_SCRIPT_MODE): Boolean.TRUE
         ]
-        this.script = scriptLines.join '\n'
-        super.execute()
+        def interpreter = new WLSTInterpreter(props)
+        interpreter.exec('connect(url=\'t3://localhost:7001\', username=\'weblogic\', password=\'oracle1234\')')
+        interpreter.exec('domainRuntime()')
+        interpreter.exec("manageSchedulerJobDefn('SHOW', 'EssNativeHostingApp')")
+        interpreter.exec('disconnect()')
     }
 }
