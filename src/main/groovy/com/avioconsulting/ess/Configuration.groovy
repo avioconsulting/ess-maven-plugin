@@ -2,7 +2,7 @@ package com.avioconsulting.ess
 
 class Configuration {
     final List<JobDefinition> jobDefinitions
-    final String hostingApplication
+    String hostingApplication
 
     Configuration() {
         this.jobDefinitions = new ArrayList<JobDefinition>()
