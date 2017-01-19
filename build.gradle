@@ -22,12 +22,27 @@ repositories {
     mavenCentral()
 }
 
+def moveDependencyToEnd(Node dependency, Node dependencies) {
+    def individualDeps = dependencies.children()
+    individualDeps.remove(dependency)
+    individualDeps.add(dependency)
+}
+
+def removeExclusions(Node dependencies) {
+    dependencies.children().each { dep ->
+        def exclusions = dep.exclusions
+        if (exclusions) {
+            dep.remove(exclusions)
+        }
+    }
+}
 
 task pluginDescriptor(type: Exec) {
     commandLine 'mvn', '-e', '-B', 'org.apache.maven.plugins:maven-plugin-plugin:3.2:descriptor'
     def findDependency = { pomNode ->
         pomNode.dependencies.dependency.find { d -> d.artifactId[0].value()[0] == 'weblogic-maven-plugin' }
     }
+
     def existingScope = null
     doFirst {
         def pom = project.file('pom.xml')
@@ -50,10 +65,16 @@ task pluginDescriptor(type: Exec) {
     }
     doLast {
         def pom = project.file('pom.xml')
-        def pomNode = new XmlParser().parse(pom)
-        def wlDependency = findDependency(pomNode)
+        Node pomNode = new XmlParser().parse(pom)
+        Node wlDependency = findDependency(pomNode)
         // put the scope back
         wlDependency.scope[0].value = existingScope
+        def dependencyList = pomNode.dependencies[0]
+        // the weblogic-maven plugin has to be at the end of the dependency list in the POM
+        moveDependencyToEnd wlDependency, dependencyList
+        // for some reason, the Gradle Maven plugin excludes transitive dependencies on 2 key items
+        // when it generates pom.xml, fix that
+        removeExclusions dependencyList
         groovy.xml.XmlUtil.serialize(pomNode, new FileWriter(pom))
         final pluginDescriptor = new File((File) project.compileGroovy.destinationDir, 'META-INF/maven/plugin.xml')
         assert pluginDescriptor.file, "[$pluginDescriptor.canonicalPath] was not created"
@@ -67,9 +88,9 @@ dependencies {
     compile 'commons-io:commons-io:1.3.2'
     compile 'org.apache.ant:ant:1.9.7'
     compile 'org.apache.maven:maven-plugin-api:3.3.9'
+    runtime 'com.oracle.fmwshare:fmwshare-wlst-dependencies:12.2.1-0-0@pom'
+    runtime 'com.oracle.ess:ess-wlst-dependencies:12.2.1-0-0@pom'
     compile group: 'com.oracle.weblogic', name: 'weblogic-maven-plugin', version: '12.2.1-2-0'
-    //runtime 'com.oracle.fmwshare:fmwshare-wlst-dependencies:12.2.1-0-0@pom'
-    //runtime 'com.oracle.ess:ess-wlst-dependencies:12.2.1-0-0@pom'
     provided 'org.apache.maven.plugin-tools:maven-plugin-annotations:3.5'
     def mvnProject = 'org.apache.maven:maven-project:3.0-alpha-2'
     // use explicitly in tests but Maven will provide the dependency at runtime
