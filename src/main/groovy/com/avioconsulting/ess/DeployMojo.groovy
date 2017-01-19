@@ -27,6 +27,8 @@ class DeployMojo extends AbstractMojo {
     @Component
     private MavenProject project
 
+    private WLSTInterpreter interpreter
+
     Configuration getConfiguration() {
         Threads.classLoader.addURL(this.project.artifact.file.toURL())
         def klass = Class.forName(this.configurationClass)
@@ -37,11 +39,13 @@ class DeployMojo extends AbstractMojo {
         def props = [
                 (WLSTInterpreter.ENABLE_SCRIPT_MODE): Boolean.TRUE
         ]
-        def interpreter = new WLSTInterpreter(props)
+        this.interpreter = new WLSTInterpreter(props)
         interpreter.exec("connect(url='${this.adminServerURL}', username='${this.weblogicUser}', password='${this.weblogicPassword}')")
         def config = this.configuration
         interpreter.exec('domainRuntime()')
-        interpreter.exec("manageSchedulerJobDefn('SHOW', '${config.hostingApplication}')")
+        def jobDefDeployer = new JobDefDeployer(this.interpreter, config.hostingApplication)
+        def existingDefs = jobDefDeployer.existingDefinitions
+        this.log.info "Existing job definitions in app ${config.hostingApplication} are: ${existingDefs}"
         interpreter.exec('disconnect()')
     }
 }
