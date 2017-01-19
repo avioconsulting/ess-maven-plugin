@@ -86,7 +86,6 @@ project.compileGroovy.doLast { pluginDescriptor.execute() }
 
 dependencies {
     compile 'commons-io:commons-io:1.3.2'
-    compile 'org.apache.ant:ant:1.9.7'
     compile 'org.apache.maven:maven-plugin-api:3.3.9'
     runtime 'com.oracle.fmwshare:fmwshare-wlst-dependencies:12.2.1-0-0@pom'
     runtime 'com.oracle.ess:ess-wlst-dependencies:12.2.1-0-0@pom'
