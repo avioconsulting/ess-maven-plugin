@@ -1,6 +1,5 @@
 package com.avioconsulting.ess.deployment
 
-import com.avioconsulting.ess.deployment.JobDefDeployer
 import com.avioconsulting.ess.models.JobDefinition
 import org.junit.Test
 
@@ -10,7 +9,7 @@ import static org.junit.Assert.assertThat
 
 class JobDefDeployerTest {
     def parseDefinitions(rawInput) {
-        new JobDefDeployer(null, 'EssNativeHostingApp').parseDefinitions(rawInput)
+        new JobDefDeployer(null, 'EssNativeHostingApp', 'http://foo'.toURL()).parseDefinitions(rawInput)
     }
 
     @Test
@@ -55,17 +54,17 @@ class JobDefDeployerTest {
     @Test
     void getProperties() {
         // arrange
-        def jobDefinition = new JobDefinition(JobDefinition.Types.SyncWebserviceJobType,
-                                              'the desc',
-                                              'http://www.foo.com/wsdl/path'.toURL(),
-                                              'the_service',
-                                              'the_port',
-                                              'the_operation',
-                                              '<message/>',
-                                              'the name')
+        def jobDefinition = new JobDefinition(jobType: JobDefinition.Types.SyncWebserviceJobType,
+                                              description: 'the desc',
+                                              wsdlPath: '/wsdl/path',
+                                              service: 'the_service',
+                                              port: 'the_port',
+                                              operation: 'the_operation',
+                                              message: '<message/>',
+                                              name: 'the name')
 
         // act
-        def result = new JobDefDeployer(null, 'EssNativeHostingApp').getProperties(jobDefinition)
+        def result = new JobDefDeployer(null, 'EssNativeHostingApp', 'http://www.foo.com'.toURL()).getProperties(jobDefinition)
 
         // assert
         assertThat result,
@@ -79,18 +78,5 @@ class JobDefDeployerTest {
                            SYS_EXT_invokeMessage   : '<message/>',
                            SYS_externalJobType     : 'SOA'
                    ]))
-    }
-
-    @Test
-    void getPythonDict() {
-        // arrange
-        def input = [foo: '123', bar: 456]
-
-        // act
-        def result = JobDefDeployer.getPythonDict(input)
-
-        // assert
-        assertThat result,
-                   is(equalTo("{'foo': '123', 'bar': '456'}"))
     }
 }
