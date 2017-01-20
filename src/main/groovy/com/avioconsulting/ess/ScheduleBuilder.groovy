@@ -43,12 +43,16 @@ class ScheduleBuilder {
         def calculator = LocalDateKitCalculatorsFactory.forwardCalculator('NO_HOLIDAYS')
         calculator.startDate = beginningDate
         def list = []
+        // don't want order they're listed to matter
+        daysOfWeek = daysOfWeek.sort()
         while (calculator.currentBusinessDate <= endDate) {
-            while (getDayOfWeek(calculator.currentBusinessDate) != daysOfWeek[0]) {
-                calculator.moveByBusinessDays(1)
+            daysOfWeek.each { day ->
+                while (getDayOfWeek(calculator.currentBusinessDate) != day) {
+                    calculator.moveByBusinessDays(1)
+                }
+                list << calculator.currentBusinessDate
             }
-            list << calculator.currentBusinessDate
-            calculator.moveByBusinessDays(5)
+            calculator.moveByBusinessDays(1)
         }
         list
     }
