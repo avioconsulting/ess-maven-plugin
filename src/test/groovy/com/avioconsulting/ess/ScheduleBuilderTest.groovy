@@ -85,11 +85,36 @@ class ScheduleBuilderTest {
     @Test
     void getSchedule_2ConsecutiveDays() {
         // arrange
+        def builder = new ScheduleBuilder(new LocalDate(2017, 1, 1))
 
         // act
+        def schedule = builder.getSchedule name: 'the_schedule',
+                                           displayName: 'the schedule',
+                                           description: 'Weekly schedule',
+                                           endDate: new LocalDate(2017, 2, 27),
+                                           timeOfDay: new LocalTime(9, 15, 10),
+                                           timeZone: DateTimeZone.forID('America/Denver'),
+                                           daysOfWeek: [RecurringSchedule.DayOfWeek.Monday,
+                                                        RecurringSchedule.DayOfWeek.Tuesday],
+                                           holidays: [new LocalDate(2017, 1, 30),
+                                                      new LocalDate(2017, 1, 31)],
+                                           alternateDirection: Direction.Backward
 
         // assert
-        fail 'test that we have 1 less execution than normal (see getAlternateDates_2DatesTogether) '
+        // would normally be 18 executions but the holidays for monday/tuesday intersect
+        assertThat schedule.recurrenceCount,
+                   is(equalTo(17))
+        assertThat schedule.includeDates.size(),
+                   is(equalTo(1))
+        // friday before the 30th since 30th is a holiday
+        assertThat schedule.includeDates[0],
+                   is(equalTo(new LocalDateTime(2017, 1, 27, 9, 15, 10)))
+        assertThat schedule.excludeDates.size(),
+                   is(equalTo(2))
+        assertThat schedule.excludeDates[0],
+                   is(equalTo(new LocalDateTime(2017, 1, 30, 9, 15, 10)))
+        assertThat schedule.excludeDates[1],
+                   is(equalTo(new LocalDateTime(2017, 1, 31, 9, 15, 10)))
     }
 
     @Test
