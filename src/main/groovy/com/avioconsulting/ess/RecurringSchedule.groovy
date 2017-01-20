@@ -1,7 +1,7 @@
 package com.avioconsulting.ess
 
 import org.joda.time.DateTimeZone
-import org.joda.time.LocalDate
+import org.joda.time.LocalDateTime
 import org.joda.time.LocalTime
 
 class RecurringSchedule {
@@ -24,13 +24,39 @@ class RecurringSchedule {
     final String displayName
     final DateTimeZone timeZone
     final Frequency frequency
-    // TODO: This is zero in the XML, what is it???
+    /**
+     * Maximum number of times the recurrence is executed
+     */
     final int recurrenceCount
     // this is 1 for every week
     final int repeatInterval
     final List<DayOfWeek> daysOfWeek
     final LocalTime timeOfDay
-    // when we generate XML, pair these with the timeOfDay
-    final Set<LocalDate> includeDates
-    final Set<LocalDate> excludeDates
+    final Set<LocalDateTime> includeDates
+    final Set<LocalDateTime> excludeDates
+
+    RecurringSchedule(String name,
+                      String description,
+                      String displayName,
+                      DateTimeZone timeZone,
+                      Frequency frequency,
+                      int recurrenceCount,
+                      int repeatInterval,
+                      List<DayOfWeek> daysOfWeek,
+                      LocalTime timeOfDay,
+                      Set<LocalDateTime> includeDates,
+                      Set<LocalDateTime> excludeDates) {
+
+        this.name = name
+        this.description = description
+        this.displayName = displayName
+        this.timeZone = timeZone
+        this.frequency = frequency
+        this.recurrenceCount = recurrenceCount
+        this.repeatInterval = repeatInterval
+        this.daysOfWeek = daysOfWeek
+        this.timeOfDay = timeOfDay
+        this.includeDates = includeDates
+        this.excludeDates = excludeDates
+    }
 }

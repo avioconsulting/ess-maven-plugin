@@ -1,6 +1,9 @@
 package com.avioconsulting.ess
 
+import org.joda.time.DateTimeZone
 import org.joda.time.LocalDate
+import org.joda.time.LocalDateTime
+import org.joda.time.LocalTime
 import org.junit.Test
 
 import static org.hamcrest.Matchers.equalTo
@@ -29,6 +32,55 @@ class ScheduleBuilderTest {
         result.collect { date ->
             date.toString()
         }
+    }
+
+    @Test
+    void getSchedule() {
+        // arrange
+        def builder = new ScheduleBuilder(new LocalDate(2017, 1, 17))
+
+        // act
+        def schedule = builder.getSchedule name: 'the_schedule',
+                                           displayName: 'the schedule',
+                                           description: 'Weekly schedule on mondays',
+                                           endDate: new LocalDate(2017, 2, 27),
+                                           timeOfDay: new LocalTime(9, 15, 10),
+                                           timeZone: DateTimeZone.forID('America/Denver'),
+                                           daysOfWeek: [RecurringSchedule.DayOfWeek.Monday],
+                                           holidays: [new LocalDate(2017, 1, 30)],
+                                           alternateDirection: Direction.Backward
+
+        // assert
+        // TODO: Base this on end date
+//        assertThat schedule.recurrenceCount,
+//                   is(equalTo(999))
+        assertThat schedule.name,
+                   is(equalTo('the_schedule'))
+        assertThat schedule.displayName,
+                   is(equalTo('the schedule'))
+        assertThat schedule.description,
+                   is(equalTo('Weekly schedule on mondays'))
+        assertThat schedule.daysOfWeek,
+                   is(equalTo([RecurringSchedule.DayOfWeek.Monday]))
+        assertThat schedule.frequency,
+                   is(equalTo(RecurringSchedule.Frequency.Weekly))
+        assertThat schedule.timeZone,
+                   is(equalTo(DateTimeZone.forID('America/Denver')))
+        // only supporting every 1 week right now
+        assertThat schedule.repeatInterval,
+                   is(equalTo(1))
+        assertThat schedule.timeOfDay,
+                   is(equalTo(new LocalTime(9, 15, 10)))
+        assertThat schedule.includeDates.size(),
+                   is(equalTo(1))
+        // friday before the 30th since 30th is a holiday
+        assertThat schedule.includeDates[0],
+                   is(equalTo(new LocalDateTime(2017, 1, 27, 9, 15, 10)))
+        assertThat schedule.excludeDates.size(),
+                   is(equalTo(1))
+        assertThat schedule.excludeDates[0],
+                   is(equalTo(new LocalDateTime(2017, 1, 30, 9, 15, 10)))
+        fail 'finish recurrenceCountTest'
     }
 
     @Test
