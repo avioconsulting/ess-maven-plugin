@@ -10,7 +10,7 @@ class JobDefinition {
     final String name
     final Types jobType
     final String description
-    final URL wsdlUrl
+    final String wsdlPath
     final String service
     final String port
     final String operation
@@ -19,7 +19,7 @@ class JobDefinition {
     JobDefinition(Map params) {
         this.jobType = params.jobType
         this.description = params.description
-        this.wsdlUrl = params.wsdlUrl
+        this.wsdlPath = params.wsdlPath
         this.service = params.service
         this.port = params.port
         this.operation = params.operation

@@ -5,8 +5,10 @@ import java.util.regex.Pattern
 class JobDefDeployer {
     private final String hostingApplication
     private final PythonCaller caller
+    private final URL soaUrl
 
-    JobDefDeployer(PythonCaller caller, String hostingApplication) {
+    JobDefDeployer(PythonCaller caller, String hostingApplication, URL soaUrl) {
+        this.soaUrl = soaUrl
         this.caller = caller
         this.hostingApplication = hostingApplication
     }
@@ -53,12 +55,11 @@ class JobDefDeployer {
     }
 
     def getProperties(JobDefinition jobDefinition) {
-        def wsdlUrl = jobDefinition.wsdlUrl
-        def baseUrl = wsdlUrl.toString().replace(wsdlUrl.path, '')
+        // these property names come from the web service template in EM
         [
                 SYS_effectiveApplication: this.hostingApplication,
-                SYS_EXT_wsWsdlBaseUrl   : baseUrl,
-                SYS_EXT_wsWsdlUrl       : wsdlUrl.path,
+                SYS_EXT_wsWsdlBaseUrl   : soaUrl.toString(),
+                SYS_EXT_wsWsdlUrl       : jobDefinition.wsdlPath,
                 SYS_EXT_wsServiceName   : jobDefinition.service,
                 SYS_EXT_wsPortName      : jobDefinition.port,
                 SYS_EXT_wsOperationName : jobDefinition.operation,
