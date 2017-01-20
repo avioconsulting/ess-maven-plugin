@@ -6,7 +6,6 @@ import net.objectlab.kit.datecalc.common.HolidayCalendar
 import net.objectlab.kit.datecalc.joda.LocalDateCalculator
 import net.objectlab.kit.datecalc.joda.LocalDateKitCalculatorsFactory
 import org.joda.time.LocalDate
-import org.joda.time.LocalDateTime
 import org.joda.time.LocalTime
 
 class ScheduleBuilder {
@@ -55,12 +54,13 @@ class ScheduleBuilder {
         excludeDates = excludeDates.collect { date ->
             date.toLocalDateTime(timeOfDay)
         }
+        def recurrenceCount = jobDates.size() - excludeDates.size() + includeDates.size()
         return new RecurringSchedule(map.name,
                                      map.description,
                                      map.displayName,
                                      map.timeZone,
                                      RecurringSchedule.Frequency.Weekly,
-                                     200,
+                                     recurrenceCount,
                                      oncePerWeekRecurInterval,
                                      daysOfWeek,
                                      timeOfDay,

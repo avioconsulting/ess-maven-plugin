@@ -37,7 +37,7 @@ class ScheduleBuilderTest {
     @Test
     void getSchedule() {
         // arrange
-        def builder = new ScheduleBuilder(new LocalDate(2017, 1, 17))
+        def builder = new ScheduleBuilder(new LocalDate(2017, 1, 1))
 
         // act
         def schedule = builder.getSchedule name: 'the_schedule',
@@ -51,9 +51,9 @@ class ScheduleBuilderTest {
                                            alternateDirection: Direction.Backward
 
         // assert
-        // TODO: Base this on end date
-//        assertThat schedule.recurrenceCount,
-//                   is(equalTo(999))
+        // should have 9 weeks of execution
+        assertThat schedule.recurrenceCount,
+                   is(equalTo(9))
         assertThat schedule.name,
                    is(equalTo('the_schedule'))
         assertThat schedule.displayName,
@@ -80,7 +80,16 @@ class ScheduleBuilderTest {
                    is(equalTo(1))
         assertThat schedule.excludeDates[0],
                    is(equalTo(new LocalDateTime(2017, 1, 30, 9, 15, 10)))
-        fail 'finish recurrenceCountTest'
+    }
+
+    @Test
+    void getSchedule_2ConsecutiveDays() {
+        // arrange
+
+        // act
+
+        // assert
+        fail 'test that we have 1 less execution than normal (see getAlternateDates_2DatesTogether) '
     }
 
     @Test
