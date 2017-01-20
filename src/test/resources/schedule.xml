@@ -1,0 +1,35 @@
+<?xml version = '1.0'?>
+<schedule name="Schedule1" xmlns="http://xmlns.oracle.com/scheduler">
+    <description>the desc</description>
+    <display-name>Schedule1</display-name>
+    <time-zone>America/Denver</time-zone>
+    <recurrence>
+        <count>0</count>
+        <frequency>WEEKLY</frequency>
+        <interval>1</interval>
+        <months-of-year></months-of-year>
+        <weeks-of-month></weeks-of-month>
+        <days-of-month></days-of-month>
+        <days-of-week>MO</days-of-week>
+        <time-of-day>9:0:0</time-of-day>
+    </recurrence>
+    <include-date>
+        <year>2017</year>
+        <month>1</month>
+        <day>18</day>
+        <time>12:54:55</time>
+    </include-date>
+    <exclude-date>
+        <year>2017</year>
+        <month>1</month>
+        <day>23</day>
+        <time>12:53:32</time>
+    </exclude-date>
+    <exclude-date>
+        <year>2017</year>
+        <month>1</month>
+        <day>18</day>
+        <time>12:53:38</time>
+    </exclude-date>
+</schedule>
+
