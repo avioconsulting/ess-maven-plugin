@@ -1,8 +1,9 @@
 package com.avioconsulting.ess.mojos
 
 import com.avioconsulting.ess.deployment.JobDefDeployer
-import com.avioconsulting.ess.models.JobDefinition
-import com.avioconsulting.ess.util.PythonCaller
+import com.avioconsulting.ess.factories.JobDefinitionFactory
+import oracle.as.scheduler.MetadataService
+import oracle.as.scheduler.MetadataServiceHandle
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugin.MojoFailureException
@@ -10,8 +11,9 @@ import org.apache.maven.plugins.annotations.Component
 import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
 import org.apache.maven.project.MavenProject
-import org.glassfish.grizzly.threadpool.Threads
 import org.reflections.Reflections
+
+import javax.naming.InitialContext
 
 @Mojo(name = 'deploy')
 class DeployMojo extends AbstractMojo {
@@ -21,11 +23,11 @@ class DeployMojo extends AbstractMojo {
     @Parameter(property = 'weblogic.password', required = true)
     private String weblogicPassword
 
-    @Parameter(property = 'admin.t3.url', required = true)
-    private String adminServerURL
+    @Parameter(property = 'soa.t3.url', required = true)
+    private String soaWeblogicUrl
 
     @Parameter(property = 'soa.deploy.url', required = true)
-    private String soaUrl
+    private String soaDeployUrl
 
     @Parameter(property = 'ess.config.package', required = true)
     private String configurationPackage
@@ -33,29 +35,67 @@ class DeployMojo extends AbstractMojo {
     @Parameter(property = 'ess.host.app', defaultValue = 'EssNativeHostingApp')
     private String essHostingApp
 
+    // java:comp/env/ess/metadata, the jndiutil context, isnt present as a JNDI name on the EJB
+    // so using the long name
+    // JndiUtil.getMetadataServiceEJB(context)
+    @Parameter(property = 'ess.metadata.ejb.jndiName', defaultValue = 'java:global.ESSAPP.ess-ejb.MetadataServiceBean!oracle.as.scheduler.MetadataServiceRemote')
+    private String essMetadataEjbJndi
+
     @Component
     private MavenProject project
 
     void execute() throws MojoExecutionException, MojoFailureException {
-        def caller = new PythonCaller()
-        caller.methodCall('connect', [
-                url     : this.adminServerURL,
-                username: this.weblogicUser,
-                password: this.weblogicPassword
-        ])
-        // artifacts from our project, which is where the configuration is, won't be in the classpath by default
-        Threads.classLoader.addURL(this.project.artifact.file.toURL())
-        caller.methodCall('domainRuntime')
-        def jobDefDeployer = new JobDefDeployer(caller, this.essHostingApp, this.soaUrl.toURL())
-        def existingDefs = jobDefDeployer.existingDefinitions
-        new Reflections(this.configurationPackage).getSubTypesOf(JobDefinition).each { klass ->
-            def newJobDef = klass.newInstance()
-            if (existingDefs.contains(newJobDef.name)) {
-                jobDefDeployer.updateDefinition(newJobDef)
-            } else {
-                jobDefDeployer.createDefinition(newJobDef)
+        withContext { InitialContext context ->
+            withMetadataService(context) { MetadataService service, MetadataServiceHandle handle ->
+                executeWithService service, handle
             }
         }
-        caller.methodCall('disconnect')
+    }
+
+    private executeWithService(MetadataService service, MetadataServiceHandle handle) {
+        // artifacts from our project, which is where the configuration is, won't be in the classpath by default
+        Thread.currentThread().contextClassLoader.addURL(this.project.artifact.file.toURL())
+        def jobDefDeployer = new JobDefDeployer(service,
+                                                handle,
+                                                this.essHostingApp,
+                                                this.soaDeployUrl.toURL())
+        def existingDefs = jobDefDeployer.existingDefinitions
+        new Reflections(this.configurationPackage).getSubTypesOf(JobDefinitionFactory).each { klass ->
+            def jobDefFactory = klass.newInstance()
+            def jobDef = jobDefFactory.create()
+            if (existingDefs.contains(jobDef.name)) {
+                jobDefDeployer.updateDefinition(jobDef)
+            } else {
+                jobDefDeployer.createDefinition(jobDef)
+            }
+        }
+    }
+
+    private withContext(Closure closure) {
+        Hashtable<String, String> props = [
+                'java.naming.factory.initial'     : 'weblogic.jndi.WLInitialContextFactory',
+                'java.naming.provider.url'        : this.soaWeblogicUrl,
+                'java.naming.security.principal'  : this.weblogicUser,
+                'java.naming.security.credentials': this.weblogicPassword
+        ]
+        def context = new InitialContext(props)
+        try {
+            closure(context)
+        }
+        finally {
+            context.close()
+        }
+    }
+
+    private MetadataService withMetadataService(InitialContext context,
+                                                Closure closure) {
+        MetadataService svc = context.lookup(this.essMetadataEjbJndi)
+        MetadataServiceHandle handle = svc.open()
+        try {
+            closure(svc, handle)
+        }
+        finally {
+            svc.close(handle)
+        }
     }
 }

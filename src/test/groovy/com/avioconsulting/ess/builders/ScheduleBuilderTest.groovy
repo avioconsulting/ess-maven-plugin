@@ -4,7 +4,6 @@ import com.avioconsulting.ess.models.Direction
 import com.avioconsulting.ess.models.RecurringSchedule
 import org.joda.time.DateTimeZone
 import org.joda.time.LocalDate
-import org.joda.time.LocalDateTime
 import org.joda.time.LocalTime
 import org.junit.Test
 

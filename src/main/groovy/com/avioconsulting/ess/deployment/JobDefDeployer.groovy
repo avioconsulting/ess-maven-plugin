@@ -1,22 +1,35 @@
 package com.avioconsulting.ess.deployment
 
 import com.avioconsulting.ess.models.JobDefinition
-import com.avioconsulting.ess.util.PythonCaller
+import oracle.as.scheduler.Filter
+import oracle.as.scheduler.MetadataService
+import oracle.as.scheduler.MetadataServiceHandle
 
 import java.util.regex.Pattern
 
 class JobDefDeployer {
     private final String hostingApplication
-    private final PythonCaller caller
     private final URL soaUrl
+    private final MetadataService service
+    private final MetadataServiceHandle handle
 
-    JobDefDeployer(PythonCaller caller, String hostingApplication, URL soaUrl) {
+    JobDefDeployer(MetadataService service, MetadataServiceHandle handle, String hostingApplication, URL soaUrl) {
+        this.handle = handle
+        this.service = service
         this.soaUrl = soaUrl
-        this.caller = caller
         this.hostingApplication = hostingApplication
     }
 
     List<String> getExistingDefinitions() {
+        def result = this.service.queryJobDefinitions(this.handle,
+                                                      new Filter('name',
+                                                                 Filter.Comparator.NOT_EQUALS,
+                                                                 ''),
+                                                      MetadataService.QueryField.NAME,
+                                                      true)
+        result.each { id ->
+            println "got result ${id}... and package ${id.packagePart}"
+        }
         def output = this.caller.withInterceptedStdout {
             this.caller.methodCall('manageSchedulerJobDefn',
                                    ['SHOW', this.hostingApplication],
@@ -30,8 +43,9 @@ class JobDefDeployer {
         if (new Pattern(/.*No Job Definitions present.*/, flags).matcher(output).matches()) {
             return []
         }
-        def matcher = new Pattern(".*Job Definitions present in namespace of \"${this.hostingApplication}\" are: \$(.*)",
-                                  flags).matcher(output)
+        def matcher = new Pattern(
+                ".*Job Definitions present in namespace of \"${this.hostingApplication}\" are: \$(.*)",
+                flags).matcher(output)
         assert matcher.matches()
         def listing = matcher.group(1)
         matcher = new Pattern(/(\S+): JobDefinition:\/\S+/, flags).matcher(listing)
@@ -39,6 +53,8 @@ class JobDefDeployer {
     }
 
     def createDefinition(JobDefinition definition) {
+        def packageName = null
+        this.service.addJobDefinition(this.handle, jobDev, packageName)
         doJobDef('CREATE', definition)
     }
 
@@ -55,19 +71,5 @@ class JobDefDeployer {
                                        desc   : jobDefinition.description,
                                        props  : (getProperties(jobDefinition) as HashMap<String, String>)
                                ])
-    }
-
-    def getProperties(JobDefinition jobDefinition) {
-        // these property names come from the web service template in EM
-        [
-                SYS_effectiveApplication: this.hostingApplication,
-                SYS_EXT_wsWsdlBaseUrl   : soaUrl.toString(),
-                SYS_EXT_wsWsdlUrl       : jobDefinition.wsdlPath,
-                SYS_EXT_wsServiceName   : jobDefinition.service,
-                SYS_EXT_wsPortName      : jobDefinition.port,
-                SYS_EXT_wsOperationName : jobDefinition.operation,
-                SYS_EXT_invokeMessage   : jobDefinition.message,
-                SYS_externalJobType     : 'SOA'
-        ]
     }
 }

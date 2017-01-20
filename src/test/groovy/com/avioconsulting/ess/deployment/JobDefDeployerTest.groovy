@@ -50,33 +50,4 @@ class JobDefDeployerTest {
         assertThat result,
                    is(equalTo([]))
     }
-
-    @Test
-    void getProperties() {
-        // arrange
-        def jobDefinition = new JobDefinition(jobType: JobDefinition.Types.SyncWebserviceJobType,
-                                              description: 'the desc',
-                                              wsdlPath: '/wsdl/path',
-                                              service: 'the_service',
-                                              port: 'the_port',
-                                              operation: 'the_operation',
-                                              message: '<message/>',
-                                              name: 'the name')
-
-        // act
-        def result = new JobDefDeployer(null, 'EssNativeHostingApp', 'http://www.foo.com'.toURL()).getProperties(jobDefinition)
-
-        // assert
-        assertThat result,
-                   is(equalTo([
-                           SYS_effectiveApplication: 'EssNativeHostingApp',
-                           SYS_EXT_wsWsdlBaseUrl   : 'http://www.foo.com',
-                           SYS_EXT_wsWsdlUrl       : '/wsdl/path',
-                           SYS_EXT_wsServiceName   : 'the_service',
-                           SYS_EXT_wsPortName      : 'the_port',
-                           SYS_EXT_wsOperationName : 'the_operation',
-                           SYS_EXT_invokeMessage   : '<message/>',
-                           SYS_externalJobType     : 'SOA'
-                   ]))
-    }
 }
