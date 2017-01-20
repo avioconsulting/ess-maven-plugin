@@ -1,6 +1,5 @@
 package com.avioconsulting.ess.builders
 
-import com.avioconsulting.ess.builders.ScheduleBuilder
 import com.avioconsulting.ess.models.Direction
 import com.avioconsulting.ess.models.RecurringSchedule
 import org.joda.time.DateTimeZone
@@ -40,23 +39,27 @@ class ScheduleBuilderTest {
     @Test
     void getSchedule() {
         // arrange
-        def builder = new ScheduleBuilder(new LocalDate(2017, 1, 1))
 
         // act
-        def schedule = builder.getSchedule name: 'the_schedule',
-                                           displayName: 'the schedule',
-                                           description: 'Weekly schedule on mondays',
-                                           endDate: new LocalDate(2017, 2, 27),
-                                           timeOfDay: new LocalTime(9, 15, 10),
-                                           timeZone: DateTimeZone.forID('America/Denver'),
-                                           daysOfWeek: [RecurringSchedule.DayOfWeek.Monday],
-                                           holidays: [new LocalDate(2017, 1, 30)],
-                                           alternateDirection: Direction.Backward
+        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
+                                                   displayName: 'the schedule',
+                                                   description: 'Weekly schedule on mondays',
+                                                   startDate: new LocalDate(2017, 1, 1),
+                                                   endDate: new LocalDate(2017, 2, 27),
+                                                   timeOfDay: new LocalTime(9, 15, 10),
+                                                   timeZone: DateTimeZone.forID('America/Denver'),
+                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Monday],
+                                                   holidays: [new LocalDate(2017, 1, 30)],
+                                                   alternateDirection: Direction.Backward
 
         // assert
-        // should have 9 weeks of execution
+        // not using count to limit
         assertThat schedule.recurrenceCount,
-                   is(equalTo(9))
+                   is(equalTo(0))
+        assertThat schedule.startDate,
+                   is(equalTo(new LocalDate(2017, 1, 1)))
+        assertThat schedule.endDate,
+                   is(equalTo(new LocalDate(2017, 2, 27)))
         assertThat schedule.name,
                    is(equalTo('the_schedule'))
         assertThat schedule.displayName,
@@ -78,46 +81,45 @@ class ScheduleBuilderTest {
                    is(equalTo(1))
         // friday before the 30th since 30th is a holiday
         assertThat schedule.includeDates[0],
-                   is(equalTo(new LocalDateTime(2017, 1, 27, 9, 15, 10)))
+                   is(equalTo(new LocalDate(2017, 1, 27)))
         assertThat schedule.excludeDates.size(),
                    is(equalTo(1))
         assertThat schedule.excludeDates[0],
-                   is(equalTo(new LocalDateTime(2017, 1, 30, 9, 15, 10)))
+                   is(equalTo(new LocalDate(2017, 1, 30)))
     }
 
     @Test
     void getSchedule_2ConsecutiveDays() {
         // arrange
-        def builder = new ScheduleBuilder(new LocalDate(2017, 1, 1))
 
         // act
-        def schedule = builder.getSchedule name: 'the_schedule',
-                                           displayName: 'the schedule',
-                                           description: 'Weekly schedule',
-                                           endDate: new LocalDate(2017, 2, 27),
-                                           timeOfDay: new LocalTime(9, 15, 10),
-                                           timeZone: DateTimeZone.forID('America/Denver'),
-                                           daysOfWeek: [RecurringSchedule.DayOfWeek.Monday,
-                                                        RecurringSchedule.DayOfWeek.Tuesday],
-                                           holidays: [new LocalDate(2017, 1, 30),
-                                                      new LocalDate(2017, 1, 31)],
-                                           alternateDirection: Direction.Backward
+        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
+                                                   displayName: 'the schedule',
+                                                   description: 'Weekly schedule',
+                                                   startDate: new LocalDate(2017, 1, 1),
+                                                   endDate: new LocalDate(2017, 2, 27),
+                                                   timeOfDay: new LocalTime(9, 15, 10),
+                                                   timeZone: DateTimeZone.forID('America/Denver'),
+                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Monday,
+                                                                RecurringSchedule.DayOfWeek.Tuesday],
+                                                   holidays: [new LocalDate(2017, 1, 30),
+                                                              new LocalDate(2017, 1, 31)],
+                                                   alternateDirection: Direction.Backward
 
         // assert
-        // would normally be 18 executions but the holidays for monday/tuesday intersect
         assertThat schedule.recurrenceCount,
-                   is(equalTo(17))
+                   is(equalTo(0))
         assertThat schedule.includeDates.size(),
                    is(equalTo(1))
         // friday before the 30th since 30th is a holiday
         assertThat schedule.includeDates[0],
-                   is(equalTo(new LocalDateTime(2017, 1, 27, 9, 15, 10)))
+                   is(equalTo(new LocalDate(2017, 1, 27)))
         assertThat schedule.excludeDates.size(),
                    is(equalTo(2))
         assertThat schedule.excludeDates[0],
-                   is(equalTo(new LocalDateTime(2017, 1, 30, 9, 15, 10)))
+                   is(equalTo(new LocalDate(2017, 1, 30)))
         assertThat schedule.excludeDates[1],
-                   is(equalTo(new LocalDateTime(2017, 1, 31, 9, 15, 10)))
+                   is(equalTo(new LocalDate(2017, 1, 31)))
     }
 
     @Test

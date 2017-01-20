@@ -8,23 +8,14 @@ import net.objectlab.kit.datecalc.common.HolidayCalendar
 import net.objectlab.kit.datecalc.joda.LocalDateCalculator
 import net.objectlab.kit.datecalc.joda.LocalDateKitCalculatorsFactory
 import org.joda.time.LocalDate
-import org.joda.time.LocalTime
 
 class ScheduleBuilder {
     static private final String NO_HOLIDAY_CALENDAR = 'NO_HOLIDAY_CALENDAR'
-    final LocalDate beginDate
 
     static {
         HolidayCalendar<LocalDate> emptyHolidayCalendar = new DefaultHolidayCalendar<LocalDate>()
-        LocalDateKitCalculatorsFactory.defaultInstance.registerHolidays(NO_HOLIDAY_CALENDAR, emptyHolidayCalendar)
-    }
-
-    ScheduleBuilder() {
-        this.beginDate = new LocalDate()
-    }
-
-    ScheduleBuilder(LocalDate beginDate) {
-        this.beginDate = beginDate
+        LocalDateKitCalculatorsFactory.defaultInstance.registerHolidays(NO_HOLIDAY_CALENDAR,
+                                                                        emptyHolidayCalendar)
     }
 
     /**
@@ -33,6 +24,7 @@ class ScheduleBuilder {
      * @param name
      * @param displayName
      * @param description
+     * @param startDate
      * @param endDate
      * @param timeOfDay
      * @param timeZone
@@ -41,33 +33,29 @@ class ScheduleBuilder {
      * @param alternateDirection
      * @return
      */
-    RecurringSchedule getSchedule(map) {
+    static RecurringSchedule getSchedule(map) {
         def daysOfWeek = map.daysOfWeek
-        def jobDates = getJobExecutionDates(this.beginDate, map.endDate, daysOfWeek)
+        def jobDates = getJobExecutionDates(map.startDate,
+                                            map.endDate,
+                                            daysOfWeek)
         Set<LocalDate> holidays = map.holidays
         Set<LocalDate> excludeDates = holidays.intersect(jobDates)
-        Set<LocalDate> includeDates = getAlternateDates(excludeDates, map.alternateDirection, holidays)
-        def oncePerWeekRecurInterval = 1
-        LocalTime timeOfDay = map.timeOfDay
-        // ESS includes the time on the exclusion/inclusion
-        includeDates = includeDates.collect { date ->
-            date.toLocalDateTime(timeOfDay)
-        }
-        excludeDates = excludeDates.collect { date ->
-            date.toLocalDateTime(timeOfDay)
-        }
-        def recurrenceCount = jobDates.size() - excludeDates.size() + includeDates.size()
-        return new RecurringSchedule(map.name,
-                                     map.description,
-                                     map.displayName,
-                                     map.timeZone,
-                                     RecurringSchedule.Frequency.Weekly,
-                                     recurrenceCount,
-                                     oncePerWeekRecurInterval,
-                                     daysOfWeek,
-                                     timeOfDay,
-                                     includeDates,
-                                     excludeDates)
+        Set<LocalDate> includeDates = getAlternateDates(excludeDates,
+                                                        map.alternateDirection,
+                                                        holidays)
+        return new RecurringSchedule(
+                name: map.name,
+                description: map.description,
+                displayName: map.displayName,
+                timeZone: map.timeZone,
+                frequency: RecurringSchedule.Frequency.Weekly,
+                startDate: map.startDate,
+                endDate: map.endDate,
+                repeatInterval: 1,
+                daysOfWeek: daysOfWeek,
+                timeOfDay: map.timeOfDay,
+                includeDates: includeDates,
+                excludeDates: excludeDates)
     }
 
     /**
@@ -81,7 +69,8 @@ class ScheduleBuilder {
     private static Set<LocalDate> getJobExecutionDates(LocalDate beginningDate,
                                                        LocalDate endDate,
                                                        List<RecurringSchedule.DayOfWeek> daysOfWeek) {
-        def calculator = LocalDateKitCalculatorsFactory.forwardCalculator(NO_HOLIDAY_CALENDAR)
+        def calculator = LocalDateKitCalculatorsFactory.forwardCalculator(
+                NO_HOLIDAY_CALENDAR)
         calculator.startDate = beginningDate
         Set<LocalDate> list = []
         // don't want order they're listed to matter
@@ -116,7 +105,8 @@ class ScheduleBuilder {
                                                     Direction direction,
                                                     Set<LocalDate> holidays) {
         def increment = direction == Direction.Forward ? 1 : -1
-        def calculator = getCalculatorWithHolidays(direction, holidays)
+        def calculator = getCalculatorWithHolidays(direction,
+                                                   holidays)
         daysOnHolidays.collect { date ->
             calculator.startDate = date
             // our start date is on a holiday, currentBusinessDate takes care of it
@@ -131,7 +121,8 @@ class ScheduleBuilder {
         HolidayCalendar<LocalDate> holidayCalendar = new DefaultHolidayCalendar<LocalDate>(holidays)
         // avoid global/static scope
         def id = UUID.randomUUID().toString()
-        LocalDateKitCalculatorsFactory.defaultInstance.registerHolidays(id, holidayCalendar)
+        LocalDateKitCalculatorsFactory.defaultInstance.registerHolidays(id,
+                                                                        holidayCalendar)
         return direction == Direction.Forward ?
                 LocalDateKitCalculatorsFactory.forwardCalculator(id) :
                 LocalDateKitCalculatorsFactory.backwardCalculator(id)
