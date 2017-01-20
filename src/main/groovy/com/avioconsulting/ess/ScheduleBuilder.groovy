@@ -40,7 +40,7 @@ class ScheduleBuilder {
     static Set<LocalDate> getJobExecutionDates(LocalDate beginningDate,
                                                LocalDate endDate,
                                                List<RecurringSchedule.DayOfWeek> daysOfWeek) {
-        def calculator = getForwardNoHolidayCalculator()
+        def calculator = LocalDateKitCalculatorsFactory.forwardCalculator(NO_HOLIDAY_CALENDAR)
         calculator.startDate = beginningDate
         Set<LocalDate> list = []
         // don't want order they're listed to matter
@@ -72,19 +72,27 @@ class ScheduleBuilder {
      * @return - exclusion dates for ESS
      */
     static Set<LocalDate> getAlternateDates(Set<LocalDate> daysOnHolidays,
-                                            Direction direction) {
+                                            Direction direction,
+                                            Set<LocalDate> holidays) {
         def increment = direction == Direction.Forward ? 1 : -1
-        def calculator = direction == Direction.Forward ?
-                getForwardNoHolidayCalculator() :
-                LocalDateKitCalculatorsFactory.backwardCalculator(NO_HOLIDAY_CALENDAR)
+        def calculator = getCalculatorWithHolidays(direction, holidays)
         daysOnHolidays.collect { date ->
             calculator.startDate = date
-            calculator.moveByBusinessDays(increment)
+            // our start date is on a holiday, currentBusinessDate takes care of it
+            if (date == calculator.currentBusinessDate) {
+                calculator.moveByBusinessDays(increment)
+            }
             calculator.currentBusinessDate
         }
     }
 
-    private static LocalDateCalculator getForwardNoHolidayCalculator() {
-        LocalDateKitCalculatorsFactory.forwardCalculator(NO_HOLIDAY_CALENDAR)
+    static LocalDateCalculator getCalculatorWithHolidays(Direction direction, Set<LocalDate> holidays) {
+        HolidayCalendar<LocalDate> holidayCalendar = new DefaultHolidayCalendar<LocalDate>(holidays)
+        // avoid global/static scope
+        def id = UUID.randomUUID().toString()
+        LocalDateKitCalculatorsFactory.defaultInstance.registerHolidays(id, holidayCalendar)
+        return direction == Direction.Forward ?
+                LocalDateKitCalculatorsFactory.forwardCalculator(id) :
+                LocalDateKitCalculatorsFactory.backwardCalculator(id)
     }
 }

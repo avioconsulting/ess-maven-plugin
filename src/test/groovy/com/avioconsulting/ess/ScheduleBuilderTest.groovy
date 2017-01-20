@@ -20,8 +20,11 @@ class ScheduleBuilderTest {
     }
 
     def getAlternateDates(List<LocalDate> daysOnHolidays,
-                          Direction direction) {
-        def result = ScheduleBuilder.getAlternateDates((Set<LocalDate>) daysOnHolidays, direction)
+                          Direction direction,
+                          List<LocalDate> holidays) {
+        def result = ScheduleBuilder.getAlternateDates((Set<LocalDate>) daysOnHolidays,
+                                                       direction,
+                                                       (Set<LocalDate>) holidays)
 
         result.collect { date ->
             date.toString()
@@ -161,7 +164,7 @@ class ScheduleBuilderTest {
         ]
 
         // act
-        def result = getAlternateDates(daysOnHolidays, Direction.Backward)
+        def result = getAlternateDates(daysOnHolidays, Direction.Backward, [])
 
         // assert
         assertThat result,
@@ -180,7 +183,7 @@ class ScheduleBuilderTest {
         ]
 
         // act
-        def result = getAlternateDates(daysOnHolidays, Direction.Forward)
+        def result = getAlternateDates(daysOnHolidays, Direction.Forward, [])
 
         // assert
         assertThat result,
@@ -190,5 +193,45 @@ class ScheduleBuilderTest {
                    ]))
     }
 
-    // TODO: 2 holidays in a row (make sure we skip the other holiday)
+    @Test
+    void getAlternateDates_2DatesTogether() {
+        // arrange
+        def daysOnHolidays = [
+                new LocalDate(2017, 1, 9),
+                new LocalDate(2017, 1, 10)
+        ]
+
+        // act
+        def result = getAlternateDates(daysOnHolidays,
+                                       Direction.Backward,
+                                       [new LocalDate(2017, 1, 9),
+                                        new LocalDate(2017, 1, 10)])
+
+        // assert
+        assertThat result,
+                   is(equalTo([
+                           '2017-01-06' // only does 1 run the day before the 2 holidays
+                   ]))
+    }
+
+    @Test
+    void getAlternateDates_AnotherHoliday() {
+        // arrange
+        def daysOnHolidays = [
+                new LocalDate(2017, 1, 9),
+                new LocalDate(2017, 1, 20)
+        ]
+
+        // act
+        def result = getAlternateDates(daysOnHolidays,
+                                       Direction.Backward,
+                                       [new LocalDate(2017, 1, 6)])
+
+        // assert
+        assertThat result,
+                   is(equalTo([
+                           '2017-01-05', // the 6th is a holiday
+                           '2017-01-19'
+                   ]))
+    }
 }
