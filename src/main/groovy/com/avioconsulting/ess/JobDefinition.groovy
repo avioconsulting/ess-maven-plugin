@@ -16,15 +16,14 @@ class JobDefinition {
     final String operation
     final String message
 
-    JobDefinition(Types jobType, String description, URL wsdlUrl, String service, String port, String operation, String message, String name) {
-
-        this.jobType = jobType
-        this.description = description
-        this.wsdlUrl = wsdlUrl
-        this.service = service
-        this.port = port
-        this.operation = operation
-        this.message = message
-        this.name = name
+    JobDefinition(Map params) {
+        this.jobType = params.jobType
+        this.description = params.description
+        this.wsdlUrl = params.wsdlUrl
+        this.service = params.service
+        this.port = params.port
+        this.operation = params.operation
+        this.message = params.message
+        this.name = params.name
     }
 }

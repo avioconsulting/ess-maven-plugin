@@ -27,6 +27,7 @@ class DeployMojo extends AbstractMojo {
     private MavenProject project
 
     Configuration getConfiguration() {
+        // artifacts from our project, which is where the configuration is, won't be in the classpath by default
         Threads.classLoader.addURL(this.project.artifact.file.toURL())
         def klass = Class.forName(this.configurationClass)
         klass.newInstance()
@@ -43,15 +44,14 @@ class DeployMojo extends AbstractMojo {
         caller.methodCall('domainRuntime')
         def jobDefDeployer = new JobDefDeployer(caller, config.hostingApplication)
         def existingDefs = jobDefDeployer.existingDefinitions
-        this.log.info "Existing job definitions in app ${config.hostingApplication} are: ${existingDefs}"
-        jobDefDeployer.updateDefinition(new JobDefinition(JobDefinition.Types.SyncWebserviceJobType,
-                                                          'the new desc 2',
-                                                          'http://localhost:8001/wsdl/path2'.toURL(),
-                                                          'service',
-                                                          'port',
-                                                          'operation',
-                                                          '<message/>',
-                                                          'test'))
+        configuration.jobDefinitions.each { newJobDef ->
+            if (existingDefs.contains(newJobDef.name)) {
+                jobDefDeployer.updateDefinition(newJobDef)
+            }
+            else {
+                jobDefDeployer.createDefinition(newJobDef)
+            }
+        }
         caller.methodCall('disconnect')
     }
 }
