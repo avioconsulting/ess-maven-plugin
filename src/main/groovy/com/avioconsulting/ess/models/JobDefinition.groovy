@@ -1,4 +1,4 @@
-package com.avioconsulting.ess
+package com.avioconsulting.ess.models
 
 class JobDefinition {
     enum Types {

@@ -1,4 +1,4 @@
-package com.avioconsulting.ess
+package com.avioconsulting.ess.models
 
 import org.joda.time.DateTimeZone
 import org.joda.time.LocalDateTime

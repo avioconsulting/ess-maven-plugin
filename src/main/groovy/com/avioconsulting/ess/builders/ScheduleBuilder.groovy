@@ -1,6 +1,8 @@
-package com.avioconsulting.ess
+package com.avioconsulting.ess.builders
 
-import com.avioconsulting.ess.RecurringSchedule.DayOfWeek
+import com.avioconsulting.ess.models.Direction
+import com.avioconsulting.ess.models.RecurringSchedule
+import com.avioconsulting.ess.models.RecurringSchedule.DayOfWeek
 import net.objectlab.kit.datecalc.common.DefaultHolidayCalendar
 import net.objectlab.kit.datecalc.common.HolidayCalendar
 import net.objectlab.kit.datecalc.joda.LocalDateCalculator

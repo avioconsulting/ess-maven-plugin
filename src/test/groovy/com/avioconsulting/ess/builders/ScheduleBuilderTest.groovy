@@ -1,5 +1,8 @@
-package com.avioconsulting.ess
+package com.avioconsulting.ess.builders
 
+import com.avioconsulting.ess.builders.ScheduleBuilder
+import com.avioconsulting.ess.models.Direction
+import com.avioconsulting.ess.models.RecurringSchedule
 import org.joda.time.DateTimeZone
 import org.joda.time.LocalDate
 import org.joda.time.LocalDateTime

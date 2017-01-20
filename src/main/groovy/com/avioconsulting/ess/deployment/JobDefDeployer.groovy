@@ -1,4 +1,7 @@
-package com.avioconsulting.ess
+package com.avioconsulting.ess.deployment
+
+import com.avioconsulting.ess.models.JobDefinition
+import com.avioconsulting.ess.util.PythonCaller
 
 import java.util.regex.Pattern
 

@@ -1,5 +1,7 @@
-package com.avioconsulting.ess
+package com.avioconsulting.ess.deployment
 
+import com.avioconsulting.ess.deployment.JobDefDeployer
+import com.avioconsulting.ess.models.JobDefinition
 import org.junit.Test
 
 import static org.hamcrest.Matchers.equalTo

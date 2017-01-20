@@ -1,5 +1,8 @@
-package com.avioconsulting.ess
+package com.avioconsulting.ess.mojos
 
+import com.avioconsulting.ess.deployment.JobDefDeployer
+import com.avioconsulting.ess.models.JobDefinition
+import com.avioconsulting.ess.util.PythonCaller
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugin.MojoFailureException

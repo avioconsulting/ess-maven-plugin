@@ -1,4 +1,4 @@
-package com.avioconsulting.ess
+package com.avioconsulting.ess.util
 
 import org.python.core.Py
 import org.python.core.PyDictionary
