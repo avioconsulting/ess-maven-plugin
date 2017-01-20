@@ -19,6 +19,15 @@ class ScheduleBuilderTest {
         }
     }
 
+    def getAlternateDates(List<LocalDate> daysOnHolidays,
+                          Direction direction) {
+        def result = ScheduleBuilder.getAlternateDates((Set<LocalDate>) daysOnHolidays, direction)
+
+        result.collect { date ->
+            date.toString()
+        }
+    }
+
     @Test
     void getJobExecutionDates_BeginOnSunday_RepeatMondays_EndSameYear() {
         // arrange
@@ -143,4 +152,43 @@ class ScheduleBuilderTest {
                    ]))
     }
 
+    @Test
+    void getAlternateDates_Backward() {
+        // arrange
+        def daysOnHolidays = [
+                new LocalDate(2017, 1, 9),
+                new LocalDate(2017, 1, 20)
+        ]
+
+        // act
+        def result = getAlternateDates(daysOnHolidays, Direction.Backward)
+
+        // assert
+        assertThat result,
+                   is(equalTo([
+                           '2017-01-06',
+                           '2017-01-19'
+                   ]))
+    }
+
+    @Test
+    void getAlternateDates_Forward() {
+        // arrange
+        def daysOnHolidays = [
+                new LocalDate(2017, 1, 9),
+                new LocalDate(2017, 1, 20)
+        ]
+
+        // act
+        def result = getAlternateDates(daysOnHolidays, Direction.Forward)
+
+        // assert
+        assertThat result,
+                   is(equalTo([
+                           '2017-01-10',
+                           '2017-01-23'
+                   ]))
+    }
+
+    // TODO: 2 holidays in a row (make sure we skip the other holiday)
 }

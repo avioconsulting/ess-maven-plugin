@@ -3,6 +3,7 @@ package com.avioconsulting.ess
 import com.avioconsulting.ess.RecurringSchedule.DayOfWeek
 import net.objectlab.kit.datecalc.common.DefaultHolidayCalendar
 import net.objectlab.kit.datecalc.common.HolidayCalendar
+import net.objectlab.kit.datecalc.joda.LocalDateCalculator
 import net.objectlab.kit.datecalc.joda.LocalDateKitCalculatorsFactory
 import org.joda.time.DateTimeZone
 import org.joda.time.LocalDate
@@ -10,11 +11,6 @@ import org.joda.time.LocalTime
 
 class ScheduleBuilder {
     static private final String NO_HOLIDAY_CALENDAR = 'NO_HOLIDAY_CALENDAR'
-
-    enum Direction {
-        Forward,
-        Backward
-    }
 
     static {
         HolidayCalendar<LocalDate> emptyHolidayCalendar = new DefaultHolidayCalendar<LocalDate>()
@@ -44,7 +40,7 @@ class ScheduleBuilder {
     static Set<LocalDate> getJobExecutionDates(LocalDate beginningDate,
                                                LocalDate endDate,
                                                List<RecurringSchedule.DayOfWeek> daysOfWeek) {
-        def calculator = LocalDateKitCalculatorsFactory.forwardCalculator(NO_HOLIDAY_CALENDAR)
+        def calculator = getForwardNoHolidayCalculator()
         calculator.startDate = beginningDate
         Set<LocalDate> list = []
         // don't want order they're listed to matter
@@ -61,20 +57,11 @@ class ScheduleBuilder {
         list
     }
 
+
     static DayOfWeek getDayOfWeek(LocalDate date) {
         int day = date.dayOfWeek
         // 1 based
         DayOfWeek.values()[day - 1]
-    }
-
-    /**
-     * TODO: See if we need this, it might be simple subtraction
-     * @param jobDates
-     * @param holidays
-     * @return - exclusion dates for ESS
-     */
-    static Set<LocalDate> getDaysOnHolidays(Set<LocalDate> jobDates,
-                                            Set<LocalDate> holidays) {
     }
 
     /**
@@ -86,6 +73,18 @@ class ScheduleBuilder {
      */
     static Set<LocalDate> getAlternateDates(Set<LocalDate> daysOnHolidays,
                                             Direction direction) {
+        def increment = direction == Direction.Forward ? 1 : -1
+        def calculator = direction == Direction.Forward ?
+                getForwardNoHolidayCalculator() :
+                LocalDateKitCalculatorsFactory.backwardCalculator(NO_HOLIDAY_CALENDAR)
+        daysOnHolidays.collect { date ->
+            calculator.startDate = date
+            calculator.moveByBusinessDays(increment)
+            calculator.currentBusinessDate
+        }
+    }
 
+    private static LocalDateCalculator getForwardNoHolidayCalculator() {
+        LocalDateKitCalculatorsFactory.forwardCalculator(NO_HOLIDAY_CALENDAR)
     }
 }
