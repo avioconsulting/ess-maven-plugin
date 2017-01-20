@@ -8,6 +8,7 @@ import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
 import org.apache.maven.project.MavenProject
 import org.glassfish.grizzly.threadpool.Threads
+import org.reflections.Reflections
 
 @Mojo(name = 'deploy')
 class DeployMojo extends AbstractMojo {
@@ -20,18 +21,14 @@ class DeployMojo extends AbstractMojo {
     @Parameter(property = 'admin.t3.url', required = true)
     private String adminServerURL
 
-    @Parameter(property = 'ess.config.class', required = true)
-    private String configurationClass
+    @Parameter(property = 'ess.config.package', required = true)
+    private String configurationPackage
+
+    @Parameter(property = 'ess.host.app', defaultValue = 'EssNativeHostingApp')
+    private String essHostingApp
 
     @Component
     private MavenProject project
-
-    Configuration getConfiguration() {
-        // artifacts from our project, which is where the configuration is, won't be in the classpath by default
-        Threads.classLoader.addURL(this.project.artifact.file.toURL())
-        def klass = Class.forName(this.configurationClass)
-        klass.newInstance()
-    }
 
     void execute() throws MojoExecutionException, MojoFailureException {
         def caller = new PythonCaller()
@@ -40,11 +37,13 @@ class DeployMojo extends AbstractMojo {
                 username: this.weblogicUser,
                 password: this.weblogicPassword
         ])
-        def config = this.configuration
+        // artifacts from our project, which is where the configuration is, won't be in the classpath by default
+        Threads.classLoader.addURL(this.project.artifact.file.toURL())
         caller.methodCall('domainRuntime')
-        def jobDefDeployer = new JobDefDeployer(caller, config.hostingApplication)
+        def jobDefDeployer = new JobDefDeployer(caller, this.essHostingApp)
         def existingDefs = jobDefDeployer.existingDefinitions
-        configuration.jobDefinitions.each { newJobDef ->
+        new Reflections(this.configurationPackage).getSubTypesOf(JobDefinition).each { klass ->
+            def newJobDef = klass.newInstance()
             if (existingDefs.contains(newJobDef.name)) {
                 jobDefDeployer.updateDefinition(newJobDef)
             }
