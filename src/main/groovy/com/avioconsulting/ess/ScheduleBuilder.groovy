@@ -10,9 +10,16 @@ import org.joda.time.LocalDate
 import org.joda.time.LocalTime
 
 class ScheduleBuilder {
+    static private final String NO_HOLIDAY_CALENDAR = 'NO_HOLIDAY_CALENDAR'
+
     enum Direction {
         Forward,
         Backward
+    }
+
+    static {
+        HolidayCalendar<LocalDate> emptyHolidayCalendar = new DefaultHolidayCalendar<LocalDate>()
+        LocalDateKitCalculatorsFactory.defaultInstance.registerHolidays(NO_HOLIDAY_CALENDAR, emptyHolidayCalendar)
     }
 
     static RecurringSchedule getSchedule(String name,
@@ -38,11 +45,9 @@ class ScheduleBuilder {
     static Set<LocalDate> getJobExecutionDates(LocalDate beginningDate,
                                                LocalDate endDate,
                                                List<RecurringSchedule.DayOfWeek> daysOfWeek) {
-        HolidayCalendar<LocalDate> holidayCalendar = new DefaultHolidayCalendar<LocalDate>()
-        LocalDateKitCalculatorsFactory.defaultInstance.registerHolidays('NO_HOLIDAYS', holidayCalendar)
-        def calculator = LocalDateKitCalculatorsFactory.forwardCalculator('NO_HOLIDAYS')
+        def calculator = LocalDateKitCalculatorsFactory.forwardCalculator(NO_HOLIDAY_CALENDAR)
         calculator.startDate = beginningDate
-        def list = []
+        Set<LocalDate> list = []
         // don't want order they're listed to matter
         daysOfWeek = daysOfWeek.sort()
         while (calculator.currentBusinessDate <= endDate) {
