@@ -1,6 +1,8 @@
 package com.avioconsulting.ess
 
+import com.avioconsulting.ess.RecurringSchedule.DayOfWeek
 import net.objectlab.kit.datecalc.common.DefaultHolidayCalendar
+import net.objectlab.kit.datecalc.common.HolidayCalendar
 import net.objectlab.kit.datecalc.joda.LocalDateCalculator
 import net.objectlab.kit.datecalc.joda.LocalDateKitCalculatorsFactory
 import org.joda.time.DateTimeZone
@@ -17,9 +19,9 @@ class ScheduleBuilder {
                                          String displayName,
                                          String description,
                                          LocalDate beginningDate,
+                                         LocalDate endDate,
                                          LocalTime timeOfDay,
                                          DateTimeZone timeZone,
-                                         int repeatInterval,
                                          List<RecurringSchedule.DayOfWeek> daysOfWeek,
                                          Set<LocalDate> holidays) {
         // will call the other 2 methods in here
@@ -29,14 +31,32 @@ class ScheduleBuilder {
      * When will the job run
      *
      * @param beginningDate - first date to start with
+     * @param endDate - date to stop at
      * @param daysOfWeek - which days the job should run on
-     * @param repeatInterval - Every x weeks
      * @return all dates the job runs on
      */
     static Set<LocalDate> getJobExecutionDates(LocalDate beginningDate,
-                                               List<RecurringSchedule.DayOfWeek> daysOfWeek,
-                                               int repeatInterval) {
+                                               LocalDate endDate,
+                                               List<RecurringSchedule.DayOfWeek> daysOfWeek) {
+        HolidayCalendar<LocalDate> holidayCalendar = new DefaultHolidayCalendar<LocalDate>()
+        LocalDateKitCalculatorsFactory.defaultInstance.registerHolidays('NO_HOLIDAYS', holidayCalendar)
+        def calculator = LocalDateKitCalculatorsFactory.forwardCalculator('NO_HOLIDAYS')
+        calculator.startDate = beginningDate
+        def list = []
+        while (calculator.currentBusinessDate <= endDate) {
+            while (getDayOfWeek(calculator.currentBusinessDate) != daysOfWeek[0]) {
+                calculator.moveByBusinessDays(1)
+            }
+            list << calculator.currentBusinessDate
+            calculator.moveByBusinessDays(5)
+        }
+        list
+    }
 
+    static DayOfWeek getDayOfWeek(LocalDate date) {
+        int day = date.dayOfWeek
+        // 1 based
+        DayOfWeek.values()[day - 1]
     }
 
     /**

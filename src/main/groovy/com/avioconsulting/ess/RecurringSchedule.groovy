@@ -10,13 +10,13 @@ class RecurringSchedule {
     }
 
     enum DayOfWeek {
-        Sunday,
         Monday,
         Tuesday,
         Wednesday,
         Thursday,
         Friday,
-        Saturday
+        Saturday,
+        Sunday
     }
 
     final String name
