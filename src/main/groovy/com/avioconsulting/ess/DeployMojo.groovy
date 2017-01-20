@@ -8,9 +8,8 @@ import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
 import org.apache.maven.project.MavenProject
 import org.glassfish.grizzly.threadpool.Threads
-import weblogic.management.scripting.utils.WLSTInterpreter
 
-@Mojo(name='deploy')
+@Mojo(name = 'deploy')
 class DeployMojo extends AbstractMojo {
     @Parameter(property = 'weblogic.user', required = true)
     private String weblogicUser
@@ -27,8 +26,6 @@ class DeployMojo extends AbstractMojo {
     @Component
     private MavenProject project
 
-    private WLSTInterpreter interpreter
-
     Configuration getConfiguration() {
         Threads.classLoader.addURL(this.project.artifact.file.toURL())
         def klass = Class.forName(this.configurationClass)
@@ -36,24 +33,25 @@ class DeployMojo extends AbstractMojo {
     }
 
     void execute() throws MojoExecutionException, MojoFailureException {
-        def props = [
-                (WLSTInterpreter.ENABLE_SCRIPT_MODE): Boolean.TRUE
-        ]
-        this.interpreter = new WLSTInterpreter(props)
-        interpreter.exec("connect(url='${this.adminServerURL}', username='${this.weblogicUser}', password='${this.weblogicPassword}')")
+        def caller = new PythonCaller()
+        caller.methodCall('connect', [
+                url     : this.adminServerURL,
+                username: this.weblogicUser,
+                password: this.weblogicPassword
+        ])
         def config = this.configuration
-        interpreter.exec('domainRuntime()')
-        def jobDefDeployer = new JobDefDeployer(this.interpreter, config.hostingApplication)
+        caller.methodCall('domainRuntime')
+        def jobDefDeployer = new JobDefDeployer(caller, config.hostingApplication)
         def existingDefs = jobDefDeployer.existingDefinitions
         this.log.info "Existing job definitions in app ${config.hostingApplication} are: ${existingDefs}"
         jobDefDeployer.updateDefinition(new JobDefinition(JobDefinition.Types.SyncWebserviceJobType,
-                                                          'the new desc',
-                                                          'http://localhost:8001/wsdl/path'.toURL(),
+                                                          'the new desc 2',
+                                                          'http://localhost:8001/wsdl/path2'.toURL(),
                                                           'service',
                                                           'port',
                                                           'operation',
                                                           '<message/>',
                                                           'test'))
-        interpreter.exec('disconnect()')
+        caller.methodCall('disconnect')
     }
 }
