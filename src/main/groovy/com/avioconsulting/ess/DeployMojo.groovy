@@ -46,6 +46,14 @@ class DeployMojo extends AbstractMojo {
         def jobDefDeployer = new JobDefDeployer(this.interpreter, config.hostingApplication)
         def existingDefs = jobDefDeployer.existingDefinitions
         this.log.info "Existing job definitions in app ${config.hostingApplication} are: ${existingDefs}"
+        jobDefDeployer.updateDefinition(new JobDefinition(JobDefinition.Types.SyncWebserviceJobType,
+                                                          'the new desc',
+                                                          'http://localhost:8001/wsdl/path'.toURL(),
+                                                          'service',
+                                                          'port',
+                                                          'operation',
+                                                          '<message/>',
+                                                          'test'))
         interpreter.exec('disconnect()')
     }
 }

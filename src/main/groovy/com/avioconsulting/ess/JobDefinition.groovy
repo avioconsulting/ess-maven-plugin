@@ -7,21 +7,16 @@ class JobDefinition {
         OnewayWebserviceJobType
     }
 
+    final String name
     final Types jobType
     final String description
-    final URI wsdlUrl
+    final URL wsdlUrl
     final String service
     final String port
     final String operation
     final String message
 
-    JobDefinition(Types jobType,
-                  String description,
-                  URI wsdlUrl,
-                  String service,
-                  String port,
-                  String operation,
-                  String message) {
+    JobDefinition(Types jobType, String description, URL wsdlUrl, String service, String port, String operation, String message, String name) {
 
         this.jobType = jobType
         this.description = description
@@ -30,5 +25,6 @@ class JobDefinition {
         this.port = port
         this.operation = operation
         this.message = message
+        this.name = name
     }
 }
