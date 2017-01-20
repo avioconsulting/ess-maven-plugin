@@ -3,7 +3,6 @@ package com.avioconsulting.ess
 import com.avioconsulting.ess.RecurringSchedule.DayOfWeek
 import net.objectlab.kit.datecalc.common.DefaultHolidayCalendar
 import net.objectlab.kit.datecalc.common.HolidayCalendar
-import net.objectlab.kit.datecalc.joda.LocalDateCalculator
 import net.objectlab.kit.datecalc.joda.LocalDateKitCalculatorsFactory
 import org.joda.time.DateTimeZone
 import org.joda.time.LocalDate
@@ -88,12 +87,5 @@ class ScheduleBuilder {
     static Set<LocalDate> getAlternateDates(Set<LocalDate> daysOnHolidays,
                                             Direction direction) {
 
-    }
-
-
-    def foo() {
-        def holidays = new DefaultHolidayCalendar<LocalDate>()
-        LocalDateKitCalculatorsFactory.registerHolidays('EVHC_2017')
-        LocalDateCalculator calc = LocalDateKitCalculatorsFactory.forwardCalculator("EVHC_2017")
     }
 }
