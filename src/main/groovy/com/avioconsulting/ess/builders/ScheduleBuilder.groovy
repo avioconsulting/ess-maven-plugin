@@ -35,7 +35,8 @@ class ScheduleBuilder {
      */
     static RecurringSchedule getSchedule(map) {
         def daysOfWeek = map.daysOfWeek
-        def jobDates = getJobExecutionDates(map.startDate,
+        LocalDate startDate = map.startDate
+        def jobDates = getJobExecutionDates(startDate,
                                             map.endDate,
                                             daysOfWeek)
         Set<LocalDate> holidays = map.holidays
@@ -43,12 +44,16 @@ class ScheduleBuilder {
         Set<LocalDate> includeDates = getAlternateDates(excludeDates,
                                                         map.alternateDirection,
                                                         holidays)
+        // don't want alternate dates before the start date
+        includeDates = includeDates.findAll { LocalDate date ->
+            date >= startDate
+        }
         new RecurringSchedule(name: map.name,
                               description: map.description,
                               displayName: map.displayName,
                               timeZone: map.timeZone,
                               frequency: RecurringSchedule.Frequency.Weekly,
-                              startDate: map.startDate,
+                              startDate: startDate,
                               endDate: map.endDate,
                               repeatInterval: 1,
                               daysOfWeek: daysOfWeek,
