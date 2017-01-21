@@ -1,6 +1,6 @@
 package com.avioconsulting.ess.mojos
 
-import com.avioconsulting.ess.deployment.ESSDeployer
+import com.avioconsulting.ess.deployment.Metadata
 import com.avioconsulting.ess.factories.JobDefinitionFactory
 import com.avioconsulting.ess.factories.ScheduleFactory
 import oracle.as.scheduler.MetadataService
@@ -52,7 +52,7 @@ class DeployMojo extends AbstractMojo {
     void execute() throws MojoExecutionException, MojoFailureException {
         // artifacts from our project, which is where the configuration is, won't be in the classpath by default
         Thread.currentThread().contextClassLoader.addURL(this.project.artifact.file.toURL())
-        withESSDeployer { ESSDeployer deployer ->
+        withMetadataDeploy { Metadata deployer ->
             def existingDefs = deployer.existingDefinitions
             def reflections = new Reflections(this.configurationPackage)
             reflections.getSubTypesOf(JobDefinitionFactory).each { klass ->
@@ -118,14 +118,14 @@ class DeployMojo extends AbstractMojo {
         }
     }
 
-    private withESSDeployer(Closure closure) {
+    private withMetadataDeploy(Closure closure) {
         withContext { InitialContext context ->
             withMetadataService(context) { MetadataService service, MetadataServiceHandle handle ->
-                closure(new ESSDeployer(service,
-                                        handle,
-                                        this.essHostingApp,
-                                        this.soaDeployUrl.toURL(),
-                                        DateTimeZone.forID(this.serverTimeZone)))
+                closure(new Metadata(service,
+                                     handle,
+                                     this.essHostingApp,
+                                     this.soaDeployUrl.toURL(),
+                                     DateTimeZone.forID(this.serverTimeZone)))
             }
         }
     }

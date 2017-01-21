@@ -10,7 +10,7 @@ import oracle.as.scheduler.MetadataService
 import oracle.as.scheduler.MetadataServiceHandle
 import org.joda.time.DateTimeZone
 
-class ESSDeployer {
+class Metadata {
     private final String hostingApplication
     private final URL soaUrl
     private final MetadataService service
@@ -21,11 +21,11 @@ class ESSDeployer {
                                                               '')
     private final ScheduleMapper scheduleMapper
 
-    ESSDeployer(MetadataService service,
-                MetadataServiceHandle handle,
-                String hostingApplication,
-                URL soaUrl,
-                DateTimeZone serverTimeZone) {
+    Metadata(MetadataService service,
+             MetadataServiceHandle handle,
+             String hostingApplication,
+             URL soaUrl,
+             DateTimeZone serverTimeZone) {
         this.handle = handle
         this.service = service
         this.soaUrl = soaUrl
