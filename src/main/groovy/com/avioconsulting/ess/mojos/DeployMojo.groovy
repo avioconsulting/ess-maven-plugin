@@ -1,6 +1,6 @@
 package com.avioconsulting.ess.mojos
 
-import com.avioconsulting.ess.deployment.JobDefDeployer
+import com.avioconsulting.ess.deployment.ESSDeployer
 import com.avioconsulting.ess.factories.JobDefinitionFactory
 import oracle.as.scheduler.MetadataService
 import oracle.as.scheduler.MetadataServiceHandle
@@ -45,30 +45,20 @@ class DeployMojo extends AbstractMojo {
     private MavenProject project
 
     void execute() throws MojoExecutionException, MojoFailureException {
-        withContext { InitialContext context ->
-            withMetadataService(context) { MetadataService service, MetadataServiceHandle handle ->
-                executeWithService service, handle
-            }
-        }
-    }
-
-    private executeWithService(MetadataService service, MetadataServiceHandle handle) {
         // artifacts from our project, which is where the configuration is, won't be in the classpath by default
         Thread.currentThread().contextClassLoader.addURL(this.project.artifact.file.toURL())
-        def jobDefDeployer = new JobDefDeployer(service,
-                                                handle,
-                                                this.essHostingApp,
-                                                this.soaDeployUrl.toURL())
-        def existingDefs = jobDefDeployer.existingDefinitions
-        new Reflections(this.configurationPackage).getSubTypesOf(JobDefinitionFactory).each { klass ->
-            def jobDefFactory = klass.newInstance()
-            def jobDef = jobDefFactory.create()
-            if (existingDefs.contains(jobDef.name)) {
-                this.log.info "Updating job definition ${jobDef.name}..."
-                jobDefDeployer.updateDefinition(jobDef)
-            } else {
-                this.log.info "Creating job definition ${jobDef.name}..."
-                jobDefDeployer.createDefinition(jobDef)
+        withESSDeployer { ESSDeployer deployer ->
+            def existingDefs = deployer.existingDefinitions
+            new Reflections(this.configurationPackage).getSubTypesOf(JobDefinitionFactory).each { klass ->
+                def jobDefFactory = klass.newInstance()
+                def jobDef = jobDefFactory.create()
+                if (existingDefs.contains(jobDef.name)) {
+                    this.log.info "Updating job definition ${jobDef.name}..."
+                    deployer.updateDefinition(jobDef)
+                } else {
+                    this.log.info "Creating job definition ${jobDef.name}..."
+                    deployer.createDefinition(jobDef)
+                }
             }
         }
     }
@@ -90,7 +80,7 @@ class DeployMojo extends AbstractMojo {
     }
 
     private withMetadataService(InitialContext context,
-                                                Closure closure) {
+                                Closure closure) {
         MetadataService svc = context.lookup(this.essMetadataEjbJndi)
         MetadataServiceHandle handle = svc.open()
         try {
@@ -98,6 +88,14 @@ class DeployMojo extends AbstractMojo {
         }
         finally {
             svc.close(handle)
+        }
+    }
+
+    private withESSDeployer(Closure closure) {
+        withContext { InitialContext context ->
+            withMetadataService(context) { MetadataService service, MetadataServiceHandle handle ->
+                closure(new ESSDeployer(service, handle, this.essHostingApp, this.soaDeployUrl.toURL()))
+            }
         }
     }
 }

@@ -7,14 +7,14 @@ import oracle.as.scheduler.MetadataObjectId
 import oracle.as.scheduler.MetadataService
 import oracle.as.scheduler.MetadataServiceHandle
 
-class JobDefDeployer {
+class ESSDeployer {
     private final String hostingApplication
     private final URL soaUrl
     private final MetadataService service
     private final MetadataServiceHandle handle
     private static final String PACKAGE_NAME_WHEN_CREATED_VIA_EM = '/oracle/apps/ess/custom/'
 
-    JobDefDeployer(MetadataService service, MetadataServiceHandle handle, String hostingApplication, URL soaUrl) {
+    ESSDeployer(MetadataService service, MetadataServiceHandle handle, String hostingApplication, URL soaUrl) {
         this.handle = handle
         this.service = service
         this.soaUrl = soaUrl
