@@ -3,6 +3,7 @@ package com.avioconsulting.ess.deployment
 import com.avioconsulting.ess.models.JobRequest
 import com.avioconsulting.ess.models.JobRequestMetadata
 import oracle.as.scheduler.*
+import org.joda.time.DateTime
 
 class RuntimeWrapper {
     private final RuntimeService runtimeService
@@ -76,8 +77,10 @@ class RuntimeWrapper {
         // using schedules not triggers
         def trigger = null
         def recurrence = schedule.recurrence
-        def startDate = recurrence.startDate
-        def endDate = recurrence.endDate
+        // requests created in EM had today as a start date
+        def startDate = new DateTime().toCalendar(Locale.default)
+        // requests created in EM had no end date on them
+        def endDate = null
         def params = new RequestParameters()
         this.runtimeService.submitRequest(this.serviceHandle,
                                           request.description,
