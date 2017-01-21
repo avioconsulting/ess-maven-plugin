@@ -87,7 +87,7 @@ class DeployMojo extends AbstractMojo {
         }
     }
 
-    private MetadataService withMetadataService(InitialContext context,
+    private withMetadataService(InitialContext context,
                                                 Closure closure) {
         MetadataService svc = context.lookup(this.essMetadataEjbJndi)
         MetadataServiceHandle handle = svc.open()
