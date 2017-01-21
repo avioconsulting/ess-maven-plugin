@@ -42,7 +42,7 @@ class JobDefMapperTest {
         assertThat metadataObjectId.type,
                    is(equalTo(MetadataObjectId.MetadataObjectType.JOB_DEFINITION))
         assertThat metadataObjectId.packagePart,
-                   is(equalTo('/oracle/as'))
+                   is(equalTo(JobDefMapper.PACKAGE_NAME_WHEN_CREATED_VIA_EM))
         def params = getMap(result.parameters)
         assertThat params,
                    is(equalTo([

@@ -5,10 +5,11 @@ import oracle.as.scheduler.MetadataObjectId
 import oracle.as.scheduler.ParameterList
 
 class JobDefMapper {
+    public static final String PACKAGE_NAME_WHEN_CREATED_VIA_EM = '/oracle/apps/ess/custom/'
+
     static JobDefinition getOracleJobDef(URL soaUrl, com.avioconsulting.ess.models.JobDefinition jobDefinition) {
-        // TODO: get the correct package name through the wizard
         def id = MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.JOB_DEFINITION,
-                                                         '/oracle/as',
+                                                         PACKAGE_NAME_WHEN_CREATED_VIA_EM,
                                                          jobDefinition.name)
         def params = new ParameterList()
         getProperties(soaUrl, jobDefinition).each {key, value ->

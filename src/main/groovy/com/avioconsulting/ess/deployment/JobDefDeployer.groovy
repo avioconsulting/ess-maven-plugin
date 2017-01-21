@@ -5,8 +5,6 @@ import oracle.as.scheduler.Filter
 import oracle.as.scheduler.MetadataService
 import oracle.as.scheduler.MetadataServiceHandle
 
-import java.util.regex.Pattern
-
 class JobDefDeployer {
     private final String hostingApplication
     private final URL soaUrl
@@ -27,29 +25,7 @@ class JobDefDeployer {
                                                                  ''),
                                                       MetadataService.QueryField.NAME,
                                                       true)
-        result.each { id ->
-            println "got result ${id}... and package ${id.packagePart}"
-        }
-        def output = this.caller.withInterceptedStdout {
-            this.caller.methodCall('manageSchedulerJobDefn',
-                                   ['SHOW', this.hostingApplication],
-                                   [:])
-        }
-        return parseDefinitions(output)
-    }
-
-    List<String> parseDefinitions(String output) {
-        int flags = Pattern.DOTALL | Pattern.MULTILINE
-        if (new Pattern(/.*No Job Definitions present.*/, flags).matcher(output).matches()) {
-            return []
-        }
-        def matcher = new Pattern(
-                ".*Job Definitions present in namespace of \"${this.hostingApplication}\" are: \$(.*)",
-                flags).matcher(output)
-        assert matcher.matches()
-        def listing = matcher.group(1)
-        matcher = new Pattern(/(\S+): JobDefinition:\/\S+/, flags).matcher(listing)
-        matcher.collect { m -> m[1] }
+        result.collect { id -> id.namePart }
     }
 
     def createDefinition(JobDefinition definition) {
@@ -60,16 +36,5 @@ class JobDefDeployer {
 
     def updateDefinition(JobDefinition definition) {
         doJobDef('UPDATE', definition)
-    }
-
-    private doJobDef(String operation, JobDefinition jobDefinition) {
-        this.caller.methodCall('manageSchedulerJobDefn',
-                               [operation, this.hostingApplication],
-                               [
-                                       jobName: jobDefinition.name,
-                                       jobType: jobDefinition.jobType.toString(),
-                                       desc   : jobDefinition.description,
-                                       props  : (getProperties(jobDefinition) as HashMap<String, String>)
-                               ])
     }
 }

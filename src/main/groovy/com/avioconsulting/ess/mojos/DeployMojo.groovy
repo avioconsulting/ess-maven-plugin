@@ -38,7 +38,7 @@ class DeployMojo extends AbstractMojo {
     // java:comp/env/ess/metadata, the jndiutil context, isnt present as a JNDI name on the EJB
     // so using the long name
     // JndiUtil.getMetadataServiceEJB(context)
-    @Parameter(property = 'ess.metadata.ejb.jndiName', defaultValue = 'java:global.ESSAPP.ess-ejb.MetadataServiceBean!oracle.as.scheduler.MetadataServiceRemote')
+    @Parameter(property = 'ess.metadata.ejb.jndiName', defaultValue = 'java:global.EssNativeHostingApp.native-ess-ejb.MetadataServiceBean!oracle.as.scheduler.MetadataServiceRemote')
     private String essMetadataEjbJndi
 
     @Component
