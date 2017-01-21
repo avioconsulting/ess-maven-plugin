@@ -5,14 +5,29 @@ import oracle.as.scheduler.MetadataObjectId
 import oracle.as.scheduler.ParameterList
 import org.junit.Test
 
-import static org.hamcrest.Matchers.equalTo
-import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
 class JobDefMapperTest {
-    def Map getMap(ParameterList params) {
+    Map getMap(ParameterList params) {
         params.getAll().collectEntries { param ->
             [param.name, param.value]
+        }
+    }
+
+    @Test
+    void jobTypesMapped() {
+        // arrange
+        def enumValues = JobDefinition.Types.values()
+
+        enumValues.each { type ->
+            // act
+            def result = JobDefMapper.typeMapping[type]
+
+            // assert
+            assertThat "ENUM value ${type}",
+                       result,
+                       is(not(nullValue()))
         }
     }
 
