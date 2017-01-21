@@ -79,6 +79,7 @@ dependencies {
     compile 'com.oracle.ess:ess-sec:12.2.1-2-0'
     compile 'com.oracle.fmwshare:mdsrt:12.2.1-2-0'
     runtime 'com.oracle.fmwshare:ojdl:12.2.1-2-0'
+    runtime 'com.oracle.weblogic:com.bea.core.weblogic.workmanager:12.2.1-2-0'
     // Easiest way to get dependencies for EJB w/ Weblogic
     def wlMaven = 'com.oracle.weblogic:weblogic-maven-plugin:12.2.1-2-0'
     runtime wlMaven
