@@ -66,13 +66,21 @@ class DeployMojo extends AbstractMojo {
             reflections.getSubTypesOf(ScheduleFactory).each { klass ->
                 def scheduleFactory = klass.newInstance()
                 def schedule = scheduleFactory.createSchedule()
+                this.log.info "Schedule details for: ${schedule.name}"
+                this.log.info "--- Display name: ${schedule.displayName}"
+                this.log.info "--- Time of day: ${schedule.timeOfDay}"
+                this.log.info "--- Days of week: ${schedule.daysOfWeek}"
+                this.log.info "--- Start date: ${schedule.startDate}"
+                this.log.info "--- End date: ${schedule.endDate}"
+                this.log.info "--- Exclude dates: ${schedule.excludeDates}"
+                this.log.info "--- Include dates: ${schedule.includeDates}"
                 if (existingSchedules.contains(schedule.name)) {
                     // update
-                    this.log.info "Updating schedule ${schedule.name}..."
+                    this.log.info 'Updating...'
                     deployer.updateSchedule(schedule)
                 }
                 else {
-                    this.log.info "Creating schedule ${schedule.name}..."
+                    this.log.info 'Creating...'
                     deployer.createSchedule(schedule)
                 }
             }
