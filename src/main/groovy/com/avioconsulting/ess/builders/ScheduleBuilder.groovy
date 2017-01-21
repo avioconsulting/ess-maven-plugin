@@ -43,19 +43,18 @@ class ScheduleBuilder {
         Set<LocalDate> includeDates = getAlternateDates(excludeDates,
                                                         map.alternateDirection,
                                                         holidays)
-        return new RecurringSchedule(
-                name: map.name,
-                description: map.description,
-                displayName: map.displayName,
-                timeZone: map.timeZone,
-                frequency: RecurringSchedule.Frequency.Weekly,
-                startDate: map.startDate,
-                endDate: map.endDate,
-                repeatInterval: 1,
-                daysOfWeek: daysOfWeek,
-                timeOfDay: map.timeOfDay,
-                includeDates: includeDates,
-                excludeDates: excludeDates)
+        new RecurringSchedule(name: map.name,
+                              description: map.description,
+                              displayName: map.displayName,
+                              timeZone: map.timeZone,
+                              frequency: RecurringSchedule.Frequency.Weekly,
+                              startDate: map.startDate,
+                              endDate: map.endDate,
+                              repeatInterval: 1,
+                              daysOfWeek: daysOfWeek,
+                              timeOfDay: map.timeOfDay,
+                              includeDates: includeDates,
+                              excludeDates: excludeDates)
     }
 
     /**

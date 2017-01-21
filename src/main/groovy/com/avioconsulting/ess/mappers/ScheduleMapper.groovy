@@ -30,10 +30,10 @@ class ScheduleMapper {
     }
 
     private static ExplicitDate getDate(LocalDate date, LocalTime timeOfDay) {
-        return new ExplicitDate(RecurrenceFields.YEAR.valueOf(date.year),
-                                RecurrenceFields.MONTH_OF_YEAR.valueOf(date.monthOfYear),
-                                RecurrenceFields.DAY_OF_MONTH.valueOf(date.dayOfMonth),
-                                getTime(timeOfDay))
+        new ExplicitDate(RecurrenceFields.YEAR.valueOf(date.year),
+                         RecurrenceFields.MONTH_OF_YEAR.valueOf(date.monthOfYear),
+                         RecurrenceFields.DAY_OF_MONTH.valueOf(date.dayOfMonth),
+                         getTime(timeOfDay))
     }
 
     private static Collection<ExplicitDate> getDates(Set<LocalDate> dates, LocalTime timeOfDay) {
