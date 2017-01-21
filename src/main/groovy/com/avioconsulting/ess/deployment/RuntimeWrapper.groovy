@@ -59,14 +59,15 @@ class RuntimeWrapper {
     private RequestDetail[] getRawRequestDetails() {
         def requestIds = this.runtimeService.queryRequests(this.serviceHandle,
                                                            everythingFilter,
-                                                           RuntimeService.QueryField.SCHEDULE,
+                                                           null,
                                                            true)
+        def idList = requestIds.toList()
         // doesn't like empty array
-        if (!requestIds.any()) {
+        if (!idList.any()) {
             return []
         }
         this.runtimeService.getRequestDetails(this.serviceHandle,
-                                              (long[]) requestIds.toList().toArray())
+                                              (long[]) idList.toArray())
     }
 
     def createRequest(JobRequest request) {
