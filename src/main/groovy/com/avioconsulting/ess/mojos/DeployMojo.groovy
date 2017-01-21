@@ -63,63 +63,67 @@ class DeployMojo extends AbstractMojo {
     @Component
     private MavenProject project
 
+    private InitialContext context
+
     void execute() throws MojoExecutionException, MojoFailureException {
         // artifacts from our project, which is where the configuration is, won't be in the classpath by default
         Thread.currentThread().contextClassLoader.addURL(this.project.artifact.file.toURL())
 
-        if (this.cleanFirst) {
-            cleanEverything()
-        }
+        withContext {
+            if (this.cleanFirst) {
+                cleanEverything()
+            }
 
-        def reflections = new Reflections(this.configurationPackage)
-        withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
-            def existingDefs = metadataWrapper.existingDefinitions
-            JobDefinition jobDef
-            reflections.getSubTypesOf(JobDefinitionFactory).each { klass ->
-                def jobDefFactory = klass.newInstance()
-                jobDef = jobDefFactory.createJobDefinition()
-                if (existingDefs.contains(jobDef.name)) {
-                    this.log.info "Updating job definition ${jobDef.name}..."
-                    metadataWrapper.updateDefinition(jobDef)
-                } else {
-                    this.log.info "Creating job definition ${jobDef.name}..."
-                    metadataWrapper.createDefinition(jobDef)
+            def reflections = new Reflections(this.configurationPackage)
+            withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
+                def existingDefs = metadataWrapper.existingDefinitions
+                JobDefinition jobDef
+                reflections.getSubTypesOf(JobDefinitionFactory).each { klass ->
+                    def jobDefFactory = klass.newInstance()
+                    jobDef = jobDefFactory.createJobDefinition()
+                    if (existingDefs.contains(jobDef.name)) {
+                        this.log.info "Updating job definition ${jobDef.name}..."
+                        metadataWrapper.updateDefinition(jobDef)
+                    } else {
+                        this.log.info "Creating job definition ${jobDef.name}..."
+                        metadataWrapper.createDefinition(jobDef)
+                    }
+                }
+
+                def existingSchedules = metadataWrapper.existingSchedules
+                RecurringSchedule schedule
+                reflections.getSubTypesOf(ScheduleFactory).each { klass ->
+                    def scheduleFactory = klass.newInstance()
+                    schedule = scheduleFactory.createSchedule()
+                    this.log.info "Schedule details for: ${schedule.name}"
+                    this.log.info "--- Display name: ${schedule.displayName}"
+                    this.log.info "--- Time of day: ${schedule.timeOfDay}"
+                    this.log.info "--- Days of week: ${schedule.daysOfWeek}"
+                    this.log.info "--- Start date: ${schedule.startDate}"
+                    this.log.info "--- End date: ${schedule.endDate}"
+                    this.log.info "--- Exclude dates: ${schedule.excludeDates}"
+                    this.log.info "--- Include dates: ${schedule.includeDates}"
+                    if (existingSchedules.contains(schedule.name)) {
+                        // update
+                        this.log.info 'Updating...'
+                        metadataWrapper.updateSchedule(schedule)
+                    } else {
+                        this.log.info 'Creating...'
+                        metadataWrapper.createSchedule(schedule)
+                    }
                 }
             }
 
-            def existingSchedules = metadataWrapper.existingSchedules
-            RecurringSchedule schedule
-            reflections.getSubTypesOf(ScheduleFactory).each { klass ->
-                def scheduleFactory = klass.newInstance()
-                schedule = scheduleFactory.createSchedule()
-                this.log.info "Schedule details for: ${schedule.name}"
-                this.log.info "--- Display name: ${schedule.displayName}"
-                this.log.info "--- Time of day: ${schedule.timeOfDay}"
-                this.log.info "--- Days of week: ${schedule.daysOfWeek}"
-                this.log.info "--- Start date: ${schedule.startDate}"
-                this.log.info "--- End date: ${schedule.endDate}"
-                this.log.info "--- Exclude dates: ${schedule.excludeDates}"
-                this.log.info "--- Include dates: ${schedule.includeDates}"
-                if (existingSchedules.contains(schedule.name)) {
-                    // update
-                    this.log.info 'Updating...'
-                    metadataWrapper.updateSchedule(schedule)
-                } else {
-                    this.log.info 'Creating...'
-                    metadataWrapper.createSchedule(schedule)
+            // job requests are dependent on schedules+jobs being committed first
+            withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
+                def existing = runtimeWrapper.existingJobRequests
+                println "Existing requests are ${existing}"
+                reflections.getSubTypesOf(JobRequestFactory).each { klass ->
+                    def jobRequestFactory = klass.newInstance()
+                    def jobRequest = jobRequestFactory.createJobRequest()
+                    this.log.info "Creating job request ${jobRequest}..."
+                    runtimeWrapper.createRequest(jobRequest)
                 }
-            }
-        }
-
-        // job requests are dependent on schedules+jobs being committed first
-        withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
-            def existing = runtimeWrapper.existingJobRequests
-            println "Existing requests are ${existing}"
-            reflections.getSubTypesOf(JobRequestFactory).each { klass ->
-                def jobRequestFactory = klass.newInstance()
-                def jobRequest = jobRequestFactory.createJobRequest()
-                this.log.info "Creating job request ${jobRequest}..."
-                runtimeWrapper.createRequest(jobRequest)
             }
         }
     }
@@ -157,12 +161,12 @@ class DeployMojo extends AbstractMojo {
                 'java.naming.security.principal'  : this.weblogicUser,
                 'java.naming.security.credentials': this.weblogicPassword
         ]
-        def context = new InitialContext(props)
+        this.context = new InitialContext(props)
         try {
-            closure(context)
+            closure()
         }
         finally {
-            context.close()
+            this.context.close()
         }
     }
 
@@ -191,22 +195,20 @@ class DeployMojo extends AbstractMojo {
     }
 
     private withDeployerTransaction(Closure closure) {
-        withContext { InitialContext context ->
-            withMetadataService(context) { MetadataService service, MetadataServiceHandle handle ->
-                def logger = { String msg -> this.log.info msg }
-                def metadataWrapper = new MetadataWrapper(service,
-                                                          handle,
-                                                          this.essHostingApp,
-                                                          this.soaDeployUrl.toURL(),
-                                                          DateTimeZone.forID(this.serverTimeZone),
-                                                          logger)
-                withRuntimeService(context) { RuntimeService runSvc, RuntimeServiceHandle runHandle ->
-                    def runtimeWrapper = new RuntimeWrapper(runSvc,
-                                                            runHandle,
-                                                            metadataWrapper,
-                                                            logger)
-                    closure(metadataWrapper, runtimeWrapper)
-                }
+        withMetadataService(this.context) { MetadataService service, MetadataServiceHandle handle ->
+            def logger = { String msg -> this.log.info msg }
+            def metadataWrapper = new MetadataWrapper(service,
+                                                      handle,
+                                                      this.essHostingApp,
+                                                      this.soaDeployUrl.toURL(),
+                                                      DateTimeZone.forID(this.serverTimeZone),
+                                                      logger)
+            withRuntimeService(this.context) { RuntimeService runSvc, RuntimeServiceHandle runHandle ->
+                def runtimeWrapper = new RuntimeWrapper(runSvc,
+                                                        runHandle,
+                                                        metadataWrapper,
+                                                        logger)
+                closure(metadataWrapper, runtimeWrapper)
             }
         }
     }
