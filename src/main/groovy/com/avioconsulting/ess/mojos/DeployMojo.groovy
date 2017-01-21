@@ -1,10 +1,16 @@
 package com.avioconsulting.ess.mojos
 
-import com.avioconsulting.ess.deployment.Metadata
+import com.avioconsulting.ess.deployment.MetadataWrapper
+import com.avioconsulting.ess.deployment.RuntimeWrapper
 import com.avioconsulting.ess.factories.JobDefinitionFactory
 import com.avioconsulting.ess.factories.ScheduleFactory
+import com.avioconsulting.ess.models.JobDefinition
+import com.avioconsulting.ess.models.JobRequest
+import com.avioconsulting.ess.models.RecurringSchedule
 import oracle.as.scheduler.MetadataService
 import oracle.as.scheduler.MetadataServiceHandle
+import oracle.as.scheduler.RuntimeService
+import oracle.as.scheduler.RuntimeServiceHandle
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugin.MojoFailureException
@@ -40,8 +46,13 @@ class DeployMojo extends AbstractMojo {
     // java:comp/env/ess/metadata, the jndiutil context, isnt present as a JNDI name on the EJB
     // so using the long name
     // JndiUtil.getMetadataServiceEJB(context)
-    @Parameter(property = 'ess.metadata.ejb.jndiName', defaultValue = 'java:global.EssNativeHostingApp.native-ess-ejb.MetadataServiceBean!oracle.as.scheduler.MetadataServiceRemote')
+    @Parameter(property = 'ess.metadata.ejb.jndiName',
+            defaultValue = 'java:global.EssNativeHostingApp.native-ess-ejb.MetadataServiceBean!oracle.as.scheduler.MetadataServiceRemote')
     private String essMetadataEjbJndi
+
+    @Parameter(property = 'ess.runtime.ejb.jndiName',
+            defaultValue = 'java:global.EssNativeHostingApp.native-ess-ejb.RuntimeServiceBean!oracle.as.scheduler.RuntimeServiceRemote')
+    private String essRuntimeEjbJndi
 
     @Parameter(property = 'ess.server.timezone', required = true)
     private String serverTimeZone
@@ -52,24 +63,26 @@ class DeployMojo extends AbstractMojo {
     void execute() throws MojoExecutionException, MojoFailureException {
         // artifacts from our project, which is where the configuration is, won't be in the classpath by default
         Thread.currentThread().contextClassLoader.addURL(this.project.artifact.file.toURL())
-        withMetadataDeploy { Metadata deployer ->
-            def existingDefs = deployer.existingDefinitions
+        withDeployers { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
+            def existingDefs = metadataWrapper.existingDefinitions
             def reflections = new Reflections(this.configurationPackage)
+            JobDefinition jobDef
             reflections.getSubTypesOf(JobDefinitionFactory).each { klass ->
                 def jobDefFactory = klass.newInstance()
-                def jobDef = jobDefFactory.createJobDefinition()
+                jobDef = jobDefFactory.createJobDefinition()
                 if (existingDefs.contains(jobDef.name)) {
                     this.log.info "Updating job definition ${jobDef.name}..."
-                    deployer.updateDefinition(jobDef)
+                    metadataWrapper.updateDefinition(jobDef)
                 } else {
                     this.log.info "Creating job definition ${jobDef.name}..."
-                    deployer.createDefinition(jobDef)
+                    metadataWrapper.createDefinition(jobDef)
                 }
             }
-            def existingSchedules = deployer.existingSchedules
+            def existingSchedules = metadataWrapper.existingSchedules
+            RecurringSchedule schedule
             reflections.getSubTypesOf(ScheduleFactory).each { klass ->
                 def scheduleFactory = klass.newInstance()
-                def schedule = scheduleFactory.createSchedule()
+                schedule = scheduleFactory.createSchedule()
                 this.log.info "Schedule details for: ${schedule.name}"
                 this.log.info "--- Display name: ${schedule.displayName}"
                 this.log.info "--- Time of day: ${schedule.timeOfDay}"
@@ -81,12 +94,16 @@ class DeployMojo extends AbstractMojo {
                 if (existingSchedules.contains(schedule.name)) {
                     // update
                     this.log.info 'Updating...'
-                    deployer.updateSchedule(schedule)
+                    metadataWrapper.updateSchedule(schedule)
                 } else {
                     this.log.info 'Creating...'
-                    deployer.createSchedule(schedule)
+                    metadataWrapper.createSchedule(schedule)
                 }
             }
+            // TESTING
+            runtimeWrapper.doesJobRequestExist(new JobRequest(jobDefinition: jobDef,
+                                                              schedule: schedule,
+                                                              description: 'the request'))
         }
     }
 
@@ -118,14 +135,30 @@ class DeployMojo extends AbstractMojo {
         }
     }
 
-    private withMetadataDeploy(Closure closure) {
+    private withRuntimeService(InitialContext context,
+                               Closure closure) {
+        RuntimeService svc = context.lookup(this.essRuntimeEjbJndi)
+        RuntimeServiceHandle handle = svc.open()
+        try {
+            closure(svc, handle)
+        }
+        finally {
+            svc.close(handle)
+        }
+    }
+
+    private withDeployers(Closure closure) {
         withContext { InitialContext context ->
             withMetadataService(context) { MetadataService service, MetadataServiceHandle handle ->
-                closure(new Metadata(service,
-                                     handle,
-                                     this.essHostingApp,
-                                     this.soaDeployUrl.toURL(),
-                                     DateTimeZone.forID(this.serverTimeZone)))
+                def metadataWrapper = new MetadataWrapper(service,
+                                                          handle,
+                                                          this.essHostingApp,
+                                                          this.soaDeployUrl.toURL(),
+                                                          DateTimeZone.forID(this.serverTimeZone))
+                withRuntimeService(context) { RuntimeService runSvc, RuntimeServiceHandle runHandle ->
+                    def runtimeWrapper = new RuntimeWrapper(runSvc, runHandle, metadataWrapper)
+                    closure(metadataWrapper, runtimeWrapper)
+                }
             }
         }
     }

@@ -11,7 +11,7 @@ import oracle.as.scheduler.MetadataServiceHandle
 import oracle.as.scheduler.Schedule
 import org.joda.time.DateTimeZone
 
-class Metadata {
+class MetadataWrapper {
     private final String hostingApplication
     private final URL soaUrl
     private final MetadataService service
@@ -21,11 +21,11 @@ class Metadata {
     private static final Filter everythingFilter = null
     private final ScheduleMapper scheduleMapper
 
-    Metadata(MetadataService service,
-             MetadataServiceHandle handle,
-             String hostingApplication,
-             URL soaUrl,
-             DateTimeZone serverTimeZone) {
+    MetadataWrapper(MetadataService service,
+                    MetadataServiceHandle handle,
+                    String hostingApplication,
+                    URL soaUrl,
+                    DateTimeZone serverTimeZone) {
         this.handle = handle
         this.service = service
         this.soaUrl = soaUrl
