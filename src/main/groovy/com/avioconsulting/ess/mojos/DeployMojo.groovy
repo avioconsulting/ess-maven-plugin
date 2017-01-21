@@ -3,6 +3,7 @@ package com.avioconsulting.ess.mojos
 import com.avioconsulting.ess.deployment.MetadataWrapper
 import com.avioconsulting.ess.deployment.RuntimeWrapper
 import com.avioconsulting.ess.factories.JobDefinitionFactory
+import com.avioconsulting.ess.factories.JobRequestFactory
 import com.avioconsulting.ess.factories.ScheduleFactory
 import com.avioconsulting.ess.models.JobDefinition
 import com.avioconsulting.ess.models.JobRequest
@@ -100,10 +101,14 @@ class DeployMojo extends AbstractMojo {
                     metadataWrapper.createSchedule(schedule)
                 }
             }
-            // TESTING
-            runtimeWrapper.doesJobRequestExist(new JobRequest(jobDefinition: jobDef,
-                                                              schedule: schedule,
-                                                              description: 'the request'))
+            def existing = runtimeWrapper.existingJobRequests
+            println "Existing requests are ${existing}"
+            reflections.getSubTypesOf(JobRequestFactory).each { klass ->
+                def jobRequestFactory = klass.newInstance()
+                def jobRequest = jobRequestFactory.createJobRequest()
+                this.log.info "Creating job request ${jobRequest}..."
+                runtimeWrapper.createRequest(jobRequest)
+            }
         }
     }
 
