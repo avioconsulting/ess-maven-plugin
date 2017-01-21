@@ -12,13 +12,15 @@ class JobDefMapper {
                                                          PACKAGE_NAME_WHEN_CREATED_VIA_EM,
                                                          jobDefinition.name)
         def params = new ParameterList()
-        getProperties(soaUrl, jobDefinition).each {key, value ->
+        getProperties(soaUrl, jobDefinition).each { key, value ->
             params.add key, value, false
         }
-        return new JobDefinition(jobDefinition.name,
-                                 id,
-                                 jobDefinition.description,
-                                 params)
+        def oracleDefinition = new JobDefinition(jobDefinition.name,
+                                                 id,
+                                                 jobDefinition.description,
+                                                 params)
+        oracleDefinition.validate()
+        oracleDefinition
     }
 
     private static getProperties(URL soaUrl, com.avioconsulting.ess.models.JobDefinition jobDefinition) {

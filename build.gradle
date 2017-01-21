@@ -80,7 +80,9 @@ dependencies {
     compile 'com.oracle.fmwshare:mdsrt:12.2.1-2-0'
     runtime 'com.oracle.fmwshare:ojdl:12.2.1-2-0'
     // Easiest way to get dependencies for EJB w/ Weblogic
-    runtime 'com.oracle.weblogic:weblogic-maven-plugin:12.2.1-2-0'
+    def wlMaven = 'com.oracle.weblogic:weblogic-maven-plugin:12.2.1-2-0'
+    runtime wlMaven
+    testCompile wlMaven
     // end ess-thin-client deps
     provided 'org.apache.maven.plugin-tools:maven-plugin-annotations:3.5'
     def mvnProject = 'org.apache.maven:maven-project:3.0-alpha-2'

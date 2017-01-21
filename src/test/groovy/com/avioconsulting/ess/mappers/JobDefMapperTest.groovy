@@ -26,19 +26,19 @@ class JobDefMapperTest {
                                       port: 'the_port',
                                       operation: 'the_operation',
                                       message: '<message/>',
-                                      name: 'the name')
+                                      name: 'the_name')
 
         // act
         def result = JobDefMapper.getOracleJobDef('http://www.foo.com'.toURL(), input)
 
         // assert
         assertThat result.name,
-                   is(equalTo('the name'))
+                   is(equalTo('the_name'))
         assertThat result.description,
                    is(equalTo('the desc'))
         def metadataObjectId = result.jobType
         assertThat metadataObjectId.namePart,
-                   is(equalTo('the name'))
+                   is(equalTo('the_name'))
         assertThat metadataObjectId.type,
                    is(equalTo(MetadataObjectId.MetadataObjectType.JOB_DEFINITION))
         assertThat metadataObjectId.packagePart,
