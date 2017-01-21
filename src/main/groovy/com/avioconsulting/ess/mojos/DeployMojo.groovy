@@ -103,10 +103,10 @@ class DeployMojo extends AbstractMojo {
                     this.log.info "--- Include dates: ${schedule.includeDates}"
                     if (existingSchedules.contains(schedule.name)) {
                         // update
-                        this.log.info 'Updating...'
+                        this.log.info 'Updating schedule...'
                         metadataWrapper.updateSchedule(schedule)
                     } else {
-                        this.log.info 'Creating...'
+                        this.log.info 'Creating schedule...'
                         metadataWrapper.createSchedule(schedule)
                     }
                 }
