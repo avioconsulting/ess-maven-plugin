@@ -77,10 +77,9 @@ class DeployMojo extends AbstractMojo {
             def reflections = new Reflections(this.configurationPackage)
             withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
                 def existingDefs = metadataWrapper.existingDefinitions
-                JobDefinition jobDef
                 reflections.getSubTypesOf(JobDefinitionFactory).each { klass ->
                     def jobDefFactory = klass.newInstance()
-                    jobDef = jobDefFactory.createJobDefinition()
+                    def jobDef = jobDefFactory.createJobDefinition()
                     if (existingDefs.contains(jobDef.name)) {
                         this.log.info "Updating job definition ${jobDef.name}..."
                         metadataWrapper.updateDefinition(jobDef)
@@ -91,10 +90,9 @@ class DeployMojo extends AbstractMojo {
                 }
 
                 def existingSchedules = metadataWrapper.existingSchedules
-                RecurringSchedule schedule
                 reflections.getSubTypesOf(ScheduleFactory).each { klass ->
                     def scheduleFactory = klass.newInstance()
-                    schedule = scheduleFactory.createSchedule()
+                    def schedule = scheduleFactory.createSchedule()
                     this.log.info "Schedule details for: ${schedule.name}"
                     this.log.info "--- Display name: ${schedule.displayName}"
                     this.log.info "--- Time of day: ${schedule.timeOfDay}"
