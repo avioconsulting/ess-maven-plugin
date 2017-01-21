@@ -8,6 +8,7 @@ import oracle.as.scheduler.Filter
 import oracle.as.scheduler.MetadataObjectId
 import oracle.as.scheduler.MetadataService
 import oracle.as.scheduler.MetadataServiceHandle
+import oracle.as.scheduler.Schedule
 import org.joda.time.DateTimeZone
 
 class Metadata {
@@ -15,7 +16,7 @@ class Metadata {
     private final URL soaUrl
     private final MetadataService service
     private final MetadataServiceHandle handle
-    private static final String PACKAGE_NAME_WHEN_CREATED_VIA_EM = '/oracle/apps/ess/custom/'
+    public static final String PACKAGE_NAME_WHEN_CREATED_VIA_EM = '/oracle/apps/ess/custom/'
     private static final Filter everythingFilter = new Filter('name',
                                                               Filter.Comparator.NOT_EQUALS,
                                                               '')
@@ -68,6 +69,13 @@ class Metadata {
         this.service.updateJobDefinition(this.handle,
                                          id,
                                          oracleDef)
+    }
+
+    Schedule getOracleSchedule(RecurringSchedule schedule) {
+        def id = MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.SCHEDULE_DEFINITION,
+                                                         PACKAGE_NAME_WHEN_CREATED_VIA_EM,
+                                                         schedule.name)
+        return this.service.getScheduleDefinition(this.handle, id, false)
     }
 
     def createSchedule(RecurringSchedule schedule) {
