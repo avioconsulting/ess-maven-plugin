@@ -1,7 +1,9 @@
 package com.avioconsulting.ess.deployment
 
 import com.avioconsulting.ess.mappers.JobDefMapper
+import com.avioconsulting.ess.mappers.ScheduleMapper
 import com.avioconsulting.ess.models.JobDefinition
+import com.avioconsulting.ess.models.RecurringSchedule
 import oracle.as.scheduler.Filter
 import oracle.as.scheduler.MetadataObjectId
 import oracle.as.scheduler.MetadataService
@@ -13,6 +15,9 @@ class ESSDeployer {
     private final MetadataService service
     private final MetadataServiceHandle handle
     private static final String PACKAGE_NAME_WHEN_CREATED_VIA_EM = '/oracle/apps/ess/custom/'
+    private static final Filter everythingFilter = new Filter('name',
+                                                              Filter.Comparator.NOT_EQUALS,
+                                                              '')
 
     ESSDeployer(MetadataService service, MetadataServiceHandle handle, String hostingApplication, URL soaUrl) {
         this.handle = handle
@@ -22,12 +27,18 @@ class ESSDeployer {
     }
 
     List<String> getExistingDefinitions() {
-        def result = this.service.queryJobDefinitions(this.handle,
-                                                      new Filter('name',
-                                                                 Filter.Comparator.NOT_EQUALS,
-                                                                 ''),
-                                                      MetadataService.QueryField.NAME,
-                                                      true)
+        Enumeration<MetadataObjectId> result = this.service.queryJobDefinitions(this.handle,
+                                                                                everythingFilter,
+                                                                                MetadataService.QueryField.NAME,
+                                                                                true)
+        result.collect { id -> id.namePart }
+    }
+
+    List<String> getExistingSchedules() {
+        Enumeration<MetadataObjectId> result = this.service.querySchedules(this.handle,
+                                                                           everythingFilter,
+                                                                           MetadataService.QueryField.NAME,
+                                                                           true)
         result.collect { id -> id.namePart }
     }
 
@@ -50,5 +61,22 @@ class ESSDeployer {
         this.service.updateJobDefinition(this.handle,
                                          id,
                                          oracleDef)
+    }
+
+    def createSchedule(RecurringSchedule schedule) {
+        def oracleSchedule = ScheduleMapper.getOracleSchedule(schedule)
+        this.service.addScheduleDefinition(this.handle,
+                                           oracleSchedule,
+                                           PACKAGE_NAME_WHEN_CREATED_VIA_EM)
+    }
+
+    def updateSchedule(RecurringSchedule schedule) {
+        def oracleSchedule = ScheduleMapper.getOracleSchedule(schedule)
+        def id = MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.SCHEDULE_DEFINITION,
+                                                         PACKAGE_NAME_WHEN_CREATED_VIA_EM,
+                                                         schedule.name)
+        this.service.updateScheduleDefinition(this.handle,
+                                              id,
+                                              oracleSchedule)
     }
 }

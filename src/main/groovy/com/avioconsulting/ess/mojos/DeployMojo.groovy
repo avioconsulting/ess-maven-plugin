@@ -2,6 +2,7 @@ package com.avioconsulting.ess.mojos
 
 import com.avioconsulting.ess.deployment.ESSDeployer
 import com.avioconsulting.ess.factories.JobDefinitionFactory
+import com.avioconsulting.ess.factories.ScheduleFactory
 import oracle.as.scheduler.MetadataService
 import oracle.as.scheduler.MetadataServiceHandle
 import org.apache.maven.plugin.AbstractMojo
@@ -49,15 +50,30 @@ class DeployMojo extends AbstractMojo {
         Thread.currentThread().contextClassLoader.addURL(this.project.artifact.file.toURL())
         withESSDeployer { ESSDeployer deployer ->
             def existingDefs = deployer.existingDefinitions
-            new Reflections(this.configurationPackage).getSubTypesOf(JobDefinitionFactory).each { klass ->
+            def reflections = new Reflections(this.configurationPackage)
+            reflections.getSubTypesOf(JobDefinitionFactory).each { klass ->
                 def jobDefFactory = klass.newInstance()
-                def jobDef = jobDefFactory.create()
+                def jobDef = jobDefFactory.createJobDefinition()
                 if (existingDefs.contains(jobDef.name)) {
                     this.log.info "Updating job definition ${jobDef.name}..."
                     deployer.updateDefinition(jobDef)
                 } else {
                     this.log.info "Creating job definition ${jobDef.name}..."
                     deployer.createDefinition(jobDef)
+                }
+            }
+            def existingSchedules = deployer.existingSchedules
+            reflections.getSubTypesOf(ScheduleFactory).each { klass ->
+                def scheduleFactory = klass.newInstance()
+                def schedule = scheduleFactory.createSchedule()
+                if (existingSchedules.contains(schedule.name)) {
+                    // update
+                    this.log.info "Updating schedule ${schedule.name}..."
+                    deployer.updateSchedule(schedule)
+                }
+                else {
+                    this.log.info "Creating schedule ${schedule.name}..."
+                    deployer.createSchedule(schedule)
                 }
             }
         }
