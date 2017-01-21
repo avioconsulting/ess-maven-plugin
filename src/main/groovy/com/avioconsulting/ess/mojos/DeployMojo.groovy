@@ -5,8 +5,6 @@ import com.avioconsulting.ess.deployment.RuntimeWrapper
 import com.avioconsulting.ess.factories.JobDefinitionFactory
 import com.avioconsulting.ess.factories.JobRequestFactory
 import com.avioconsulting.ess.factories.ScheduleFactory
-import com.avioconsulting.ess.models.JobDefinition
-import com.avioconsulting.ess.models.RecurringSchedule
 import oracle.as.scheduler.MetadataService
 import oracle.as.scheduler.MetadataServiceHandle
 import oracle.as.scheduler.RuntimeService
@@ -115,12 +113,19 @@ class DeployMojo extends AbstractMojo {
             // job requests are dependent on schedules+jobs being committed first
             withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
                 def existing = runtimeWrapper.existingJobRequests
-                println "Existing requests are ${existing}"
                 reflections.getSubTypesOf(JobRequestFactory).each { klass ->
                     def jobRequestFactory = klass.newInstance()
                     def jobRequest = jobRequestFactory.createJobRequest()
-                    this.log.info "Creating job request ${jobRequest}..."
-                    runtimeWrapper.createRequest(jobRequest)
+                    def existingJobRequest = existing.find { data ->
+                        data.scheduleName == jobRequest.schedule.name && data.jobDefinitionName == jobRequest.jobDefinition.name
+                    }
+                    if (existingJobRequest) {
+                        this.log.info "Updating job request ${jobRequest.description} to ensure schedule is accurate..."
+                        runtimeWrapper.updateRequestSchedule(existingJobRequest)
+                    } else {
+                        this.log.info "Creating job request ${jobRequest.description}..."
+                        runtimeWrapper.createRequest(jobRequest)
+                    }
                 }
             }
         }

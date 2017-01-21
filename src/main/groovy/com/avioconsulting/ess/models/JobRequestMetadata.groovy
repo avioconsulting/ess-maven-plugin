@@ -7,6 +7,6 @@ import groovy.transform.InheritConstructors
 @InheritConstructors
 class JobRequestMetadata extends BaseModel {
     long id
-    String jobRequestName
+    String jobDefinitionName
     String scheduleName
 }

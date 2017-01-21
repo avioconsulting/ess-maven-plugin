@@ -60,7 +60,7 @@ class RuntimeWrapper {
             // we only need to update/work with parent requests
             ![State.CANCELLED, State.CANCELLING].contains(details.state) && details.parent == NO_PARENTS
         }.collect { details ->
-            new JobRequestMetadata(jobRequestName: details.jobDefn.namePart,
+            new JobRequestMetadata(jobDefinitionName: details.jobDefn.namePart,
                                    scheduleName: details.schedule.name,
                                    id: details.requestId)
         }
@@ -72,6 +72,11 @@ class RuntimeWrapper {
                                                            null,
                                                            true)
         requestIds.toList()
+    }
+
+    def updateRequestSchedule(JobRequestMetadata metadata) {
+        def scheduleId = MetadataWrapper.getScheduleId(metadata.scheduleName)
+        this.runtimeService.replaceSchedule(this.serviceHandle, metadata.id, scheduleId)
     }
 
     def createRequest(JobRequest request) {

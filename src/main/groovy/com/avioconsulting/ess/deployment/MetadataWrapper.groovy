@@ -89,7 +89,7 @@ class MetadataWrapper {
         return this.service.getScheduleDefinition(this.handle, id, false)
     }
 
-    private static MetadataObjectId getScheduleId(String name) {
+    static MetadataObjectId getScheduleId(String name) {
         MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.SCHEDULE_DEFINITION,
                                                 PACKAGE_NAME_WHEN_CREATED_VIA_EM,
                                                 name)
