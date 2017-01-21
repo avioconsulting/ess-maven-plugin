@@ -129,24 +129,24 @@ class DeployMojo extends AbstractMojo {
         withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
             runtimeWrapper.cancelAllRequests()
         }
-        withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
-            // wait for cancel to happen
-            [1..5][0].find { index ->
-                try {
+        [1..5][0].find { index ->
+            try {
+                // when we retry, we have to start a whole new transaction
+                withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
                     runtimeWrapper.deleteAllRequests()
-                    return true
+                    metadataWrapper.deleteAllSchedules()
+                    metadataWrapper.deleteAllDefinitions()
                 }
-                catch (e) {
-                    if (index == 5) {
-                        throw new Exception("Tried ${index} times and failed!", e)
-                    }
-                    this.log.info "Delete requests try 1 failed, sleeping 2 sec"
-                    Thread.sleep(2000)
-                    return false
-                }
+                return true
             }
-            metadataWrapper.deleteAllSchedules()
-            metadataWrapper.deleteAllDefinitions()
+            catch (e) {
+                if (index == 5) {
+                    throw new Exception("Tried ${index} times and failed!", e)
+                }
+                this.log.info "Delete requests try 1 failed, sleeping 2 sec"
+                Thread.sleep(2000)
+                return false
+            }
         }
     }
 
