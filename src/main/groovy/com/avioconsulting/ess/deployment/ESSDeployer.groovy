@@ -11,7 +11,6 @@ import oracle.as.scheduler.MetadataServiceHandle
 import org.joda.time.DateTimeZone
 
 class ESSDeployer {
-    private final DateTimeZone serverTimeZone
     private final String hostingApplication
     private final URL soaUrl
     private final MetadataService service
@@ -20,6 +19,7 @@ class ESSDeployer {
     private static final Filter everythingFilter = new Filter('name',
                                                               Filter.Comparator.NOT_EQUALS,
                                                               '')
+    private final ScheduleMapper scheduleMapper
 
     ESSDeployer(MetadataService service,
                 MetadataServiceHandle handle,
@@ -30,7 +30,7 @@ class ESSDeployer {
         this.service = service
         this.soaUrl = soaUrl
         this.hostingApplication = hostingApplication
-        this.serverTimeZone = serverTimeZone
+        this.scheduleMapper = new ScheduleMapper(serverTimeZone)
     }
 
     List<String> getExistingDefinitions() {
@@ -71,14 +71,14 @@ class ESSDeployer {
     }
 
     def createSchedule(RecurringSchedule schedule) {
-        def oracleSchedule = ScheduleMapper.getOracleSchedule(schedule, this.serverTimeZone)
+        def oracleSchedule = this.scheduleMapper.getOracleSchedule(schedule)
         this.service.addScheduleDefinition(this.handle,
                                            oracleSchedule,
                                            PACKAGE_NAME_WHEN_CREATED_VIA_EM)
     }
 
     def updateSchedule(RecurringSchedule schedule) {
-        def oracleSchedule = ScheduleMapper.getOracleSchedule(schedule, this.serverTimeZone)
+        def oracleSchedule = this.scheduleMapper.getOracleSchedule(schedule)
         def id = MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.SCHEDULE_DEFINITION,
                                                          PACKAGE_NAME_WHEN_CREATED_VIA_EM,
                                                          schedule.name)

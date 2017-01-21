@@ -13,7 +13,7 @@ class BaseModel {
             try {
                 this."${k}" = v
             }
-            catch(e) {
+            catch (e) {
                 throw new Exception("Problem with ${k}", e)
             }
         }

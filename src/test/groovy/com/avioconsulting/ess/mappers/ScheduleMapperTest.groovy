@@ -54,13 +54,13 @@ class ScheduleMapperTest {
     }
 
     @Test
-    void getOracleSchedule() {
+    void getOracleSchedule_Description() {
         // arrange
         def schedule = new RecurringSchedule(
                 name: 'the_sch_name',
                 description: 'the description',
                 displayName: 'the display name',
-                timeZone: DateTimeZone.forID('America/Denver'),
+                timeZone: DateTimeZone.forID('America/New_York'),
                 frequency: RecurringSchedule.Frequency.Weekly,
                 startDate: new LocalDate(2017, 1, 1),
                 endDate: new LocalDate(2017, 2, 1),
@@ -72,7 +72,8 @@ class ScheduleMapperTest {
                 excludeDates: [new LocalDate(2017, 1, 17), new LocalDate(2017, 1, 18)])
 
         // act
-        def result = ScheduleMapper.getOracleSchedule(schedule, DateTimeZone.forID('America/Chicago'))
+        def result = new ScheduleMapper(DateTimeZone.forID('America/Los_Angeles'),
+                                        DateTimeZone.forID('America/Chicago')).getOracleSchedule(schedule)
 
         // assert
         assertThat result.name,
@@ -81,23 +82,125 @@ class ScheduleMapperTest {
                    is(equalTo('the description'))
         assertThat result.displayName,
                    is(equalTo('the display name'))
-        assertThat result.timeZone,
-                   is(equalTo(schedule.timeZone.toTimeZone()))
-        assertThat fromExplicitDates(result.inclusionDates),
-                   is(equalTo(['2017-01-15 10:15:10', '2017-01-16 10:15:10']))
-        assertThat fromExplicitDates(result.exclusionDates),
-                   is(equalTo(['2017-01-17 10:15:10', '2017-01-18 10:15:10']))
         def recurrence = result.recurrence
-        assertThat recurrence.frequency,
-                   is(equalTo(RecurrenceFields.FREQUENCY.WEEKLY))
-        assertThat recurrence.startDate,
-                   is(equalTo(schedule.startDate.toDate().toCalendar()))
-        assertThat recurrence.endDate,
-                   is(equalTo(schedule.endDate.toDate().toCalendar()))
         assertThat recurrence.interval,
                    is(equalTo(1))
         assertThat recurrence.daysOfWeek,
                    is(equalTo([RecurrenceFields.DAY_OF_WEEK.MONDAY, RecurrenceFields.DAY_OF_WEEK.TUESDAY]))
+        assertThat recurrence.frequency,
+                   is(equalTo(RecurrenceFields.FREQUENCY.WEEKLY))
+    }
+
+    @Test
+    void getOracleSchedule_serverCentral_machineLA_jobNY() {
+        // arrange
+        def schedule = new RecurringSchedule(
+                name: 'the_sch_name',
+                description: 'the description',
+                displayName: 'the display name',
+                timeZone: DateTimeZone.forID('America/New_York'),
+                frequency: RecurringSchedule.Frequency.Weekly,
+                startDate: new LocalDate(2017, 1, 1),
+                endDate: new LocalDate(2017, 2, 1),
+                repeatInterval: 1,
+                daysOfWeek: [RecurringSchedule.DayOfWeek.Monday,
+                             RecurringSchedule.DayOfWeek.Tuesday],
+                timeOfDay: new LocalTime(9, 15, 10),
+                includeDates: [new LocalDate(2017, 1, 15), new LocalDate(2017, 1, 16)],
+                excludeDates: [new LocalDate(2017, 1, 17), new LocalDate(2017, 1, 18)])
+
+        // act
+        def result = new ScheduleMapper(DateTimeZone.forID('America/Los_Angeles'),
+                                        DateTimeZone.forID('America/Chicago')).getOracleSchedule(schedule)
+
+        // assert
+        assertThat result.timeZone,
+                   is(equalTo(schedule.timeZone.toTimeZone()))
+        assertThat fromExplicitDates(result.inclusionDates),
+                   is(equalTo(['2017-01-15 08:15:10', '2017-01-16 08:15:10']))
+        assertThat fromExplicitDates(result.exclusionDates),
+                   is(equalTo(['2017-01-17 08:15:10', '2017-01-18 08:15:10']))
+        def recurrence = result.recurrence
+        assertThat recurrence.startDate,
+                   is(equalTo(schedule.startDate.toDate().toCalendar()))
+        assertThat recurrence.endDate,
+                   is(equalTo(schedule.endDate.toDate().toCalendar()))
+        assertThat recurrence.recurTime.toString(),
+                   is(equalTo('6:15:10'))
+    }
+
+    @Test
+    void getOracleSchedule_serverCentral_machineLA_jobCentral() {
+        // arrange
+        def schedule = new RecurringSchedule(
+                name: 'the_sch_name',
+                description: 'the description',
+                displayName: 'the display name',
+                timeZone: DateTimeZone.forID('America/Chicago'),
+                frequency: RecurringSchedule.Frequency.Weekly,
+                startDate: new LocalDate(2017, 1, 1),
+                endDate: new LocalDate(2017, 2, 1),
+                repeatInterval: 1,
+                daysOfWeek: [RecurringSchedule.DayOfWeek.Monday,
+                             RecurringSchedule.DayOfWeek.Tuesday],
+                timeOfDay: new LocalTime(9, 15, 10),
+                includeDates: [new LocalDate(2017, 1, 15), new LocalDate(2017, 1, 16)],
+                excludeDates: [new LocalDate(2017, 1, 17), new LocalDate(2017, 1, 18)])
+
+        // act
+        def result = new ScheduleMapper(DateTimeZone.forID('America/Los_Angeles'),
+                                        DateTimeZone.forID('America/Chicago')).getOracleSchedule(schedule)
+
+        // assert
+        assertThat result.timeZone,
+                   is(equalTo(schedule.timeZone.toTimeZone()))
+        assertThat fromExplicitDates(result.inclusionDates),
+                   is(equalTo(['2017-01-15 09:15:10', '2017-01-16 09:15:10']))
+        assertThat fromExplicitDates(result.exclusionDates),
+                   is(equalTo(['2017-01-17 09:15:10', '2017-01-18 09:15:10']))
+        def recurrence = result.recurrence
+        assertThat recurrence.startDate,
+                   is(equalTo(schedule.startDate.toDate().toCalendar()))
+        assertThat recurrence.endDate,
+                   is(equalTo(schedule.endDate.toDate().toCalendar()))
+        assertThat recurrence.recurTime.toString(),
+                   is(equalTo('7:15:10'))
+    }
+
+    @Test
+    void getOracleSchedule_serverCentral_machineCentral_jobCentral() {
+        // arrange
+        def schedule = new RecurringSchedule(
+                name: 'the_sch_name',
+                description: 'the description',
+                displayName: 'the display name',
+                timeZone: DateTimeZone.forID('America/Chicago'),
+                frequency: RecurringSchedule.Frequency.Weekly,
+                startDate: new LocalDate(2017, 1, 1),
+                endDate: new LocalDate(2017, 2, 1),
+                repeatInterval: 1,
+                daysOfWeek: [RecurringSchedule.DayOfWeek.Monday,
+                             RecurringSchedule.DayOfWeek.Tuesday],
+                timeOfDay: new LocalTime(9, 15, 10),
+                includeDates: [new LocalDate(2017, 1, 15), new LocalDate(2017, 1, 16)],
+                excludeDates: [new LocalDate(2017, 1, 17), new LocalDate(2017, 1, 18)])
+
+        // act
+        def result = new ScheduleMapper(DateTimeZone.forID('America/Chicago'),
+                                        DateTimeZone.forID('America/Chicago')).getOracleSchedule(schedule)
+
+        // assert
+        assertThat result.timeZone,
+                   is(equalTo(schedule.timeZone.toTimeZone()))
+        assertThat fromExplicitDates(result.inclusionDates),
+                   is(equalTo(['2017-01-15 09:15:10', '2017-01-16 09:15:10']))
+        assertThat fromExplicitDates(result.exclusionDates),
+                   is(equalTo(['2017-01-17 09:15:10', '2017-01-18 09:15:10']))
+        def recurrence = result.recurrence
+        assertThat recurrence.startDate,
+                   is(equalTo(schedule.startDate.toDate().toCalendar()))
+        assertThat recurrence.endDate,
+                   is(equalTo(schedule.endDate.toDate().toCalendar()))
         assertThat recurrence.recurTime.toString(),
                    is(equalTo('9:15:10'))
     }
