@@ -26,7 +26,13 @@ class RuntimeWrapper {
     }
 
     def cancelAllRequests() {
-        def existing = getRawRequestDetails()
+        def idList = getRequestIds()
+        // getRequestDetails doesn't like empty calls
+        if (!idList.any()) {
+            return
+        }
+        def existing = this.runtimeService.getRequestDetails(this.serviceHandle,
+                                                             (long[]) idList.toArray())
         // cancel any parents first
         existing.findAll {
             details -> details.parent == NO_PARENTS && ![State.CANCELLED, State.CANCELLING].contains(details.state)
@@ -37,37 +43,35 @@ class RuntimeWrapper {
     }
 
     def deleteAllRequests() {
-        def existing = getRawRequestDetails()
-        existing.each { details ->
-            this.logger "Deleting request ID ${details.requestId}"
-            this.runtimeService.deleteRequest(this.serviceHandle, details.requestId)
+        def idList = getRequestIds()
+        idList.each { id ->
+            this.logger "Deleting request ID ${id}"
+            this.runtimeService.deleteRequest(this.serviceHandle, id)
         }
     }
 
     List<JobRequestMetadata> getExistingJobRequests() {
-        RequestDetail[] requestDetails = getRawRequestDetails()
-        // multiple filter values
-        requestDetails.findAll {
-            details -> ![State.CANCELLED, State.CANCELLING].contains(details.state) && details.parent == NO_PARENTS
+        def idList = getRequestIds()
+        idList.collect { id ->
+            // for some reason, the job requests we create via this API only return the schedule if we fetch
+            // them individually. EM created requests do not have that problem
+            this.runtimeService.getRequestDetail(this.serviceHandle, id, true)
+        }.findAll { details ->
+            // we only need to update/work with parent requests
+            ![State.CANCELLED, State.CANCELLING].contains(details.state) && details.parent == NO_PARENTS
         }.collect { details ->
             new JobRequestMetadata(jobRequestName: details.jobDefn.namePart,
-                                   scheduleName: details.scheduleDefn.namePart,
+                                   scheduleName: details.schedule.name,
                                    id: details.requestId)
         }
     }
 
-    private RequestDetail[] getRawRequestDetails() {
+    private List getRequestIds() {
         def requestIds = this.runtimeService.queryRequests(this.serviceHandle,
                                                            everythingFilter,
                                                            null,
                                                            true)
-        def idList = requestIds.toList()
-        // doesn't like empty array
-        if (!idList.any()) {
-            return []
-        }
-        this.runtimeService.getRequestDetails(this.serviceHandle,
-                                              (long[]) idList.toArray())
+        requestIds.toList()
     }
 
     def createRequest(JobRequest request) {
