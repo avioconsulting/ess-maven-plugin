@@ -5,29 +5,36 @@ import oracle.as.scheduler.MetadataObjectId
 import oracle.as.scheduler.ParameterList
 
 class JobDefMapper {
-    public static final String PACKAGE_NAME_WHEN_CREATED_VIA_EM = '/oracle/apps/ess/custom/'
+    public static final String JOB_TYPE_PACKAGE_FROM_EM = '/oracle/as/ess/core/'
+    private static final Map<com.avioconsulting.ess.models.JobDefinition.Types, String> typeMapping = [
+            (com.avioconsulting.ess.models.JobDefinition.Types.SyncWebService)  : 'SyncWebserviceJobType',
+            (com.avioconsulting.ess.models.JobDefinition.Types.AsyncWebService) : 'AsyncWebserviceJobType',
+            (com.avioconsulting.ess.models.JobDefinition.Types.OneWayWebService): 'OnewayWebserviceJobType'
+    ]
 
-    static JobDefinition getOracleJobDef(URL soaUrl, com.avioconsulting.ess.models.JobDefinition jobDefinition) {
-        def id = MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.JOB_DEFINITION,
-                                                         PACKAGE_NAME_WHEN_CREATED_VIA_EM,
-                                                         jobDefinition.name)
+    static JobDefinition getOracleJobDef(URL soaUrl,
+                                         String hostingApp,
+                                         com.avioconsulting.ess.models.JobDefinition jobDefinition) {
+        def jobTypeId = MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.JOB_TYPE,
+                                                                JOB_TYPE_PACKAGE_FROM_EM,
+                                                                typeMapping[jobDefinition.jobType])
         def params = new ParameterList()
-        getProperties(soaUrl, jobDefinition).each { key, value ->
+        getProperties(soaUrl, hostingApp, jobDefinition).each { key, value ->
             params.add key, value, false
         }
         def oracleDefinition = new JobDefinition(jobDefinition.name,
-                                                 id,
+                                                 jobTypeId,
                                                  jobDefinition.description,
                                                  params)
         oracleDefinition.validate()
         oracleDefinition
     }
 
-    private static getProperties(URL soaUrl, com.avioconsulting.ess.models.JobDefinition jobDefinition) {
+    private static getProperties(URL soaUrl, String hostingApp,
+                                 com.avioconsulting.ess.models.JobDefinition jobDefinition) {
         // these property names come from the web service template in EM
         [
-                // TODO: is this populated by the system if we don't include it??
-                SYS_effectiveApplication: 'EssNativeHostingApp',
+                SYS_effectiveApplication: hostingApp,
                 SYS_EXT_wsWsdlBaseUrl   : soaUrl.toString(),
                 SYS_EXT_wsWsdlUrl       : jobDefinition.wsdlPath,
                 SYS_EXT_wsServiceName   : jobDefinition.service,

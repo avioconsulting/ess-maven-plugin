@@ -19,7 +19,7 @@ class JobDefMapperTest {
     @Test
     void getOracleJobDef() {
         // arrange
-        def input = new JobDefinition(jobType: JobDefinition.Types.SyncWebserviceJobType,
+        def input = new JobDefinition(jobType: JobDefinition.Types.SyncWebService,
                                       description: 'the desc',
                                       wsdlPath: '/wsdl/path',
                                       service: 'the_service',
@@ -29,24 +29,24 @@ class JobDefMapperTest {
                                       name: 'the_name')
 
         // act
-        def result = JobDefMapper.getOracleJobDef('http://www.foo.com'.toURL(), input)
+        def result = JobDefMapper.getOracleJobDef('http://www.foo.com'.toURL(), 'theApp', input)
 
         // assert
         assertThat result.name,
                    is(equalTo('the_name'))
         assertThat result.description,
                    is(equalTo('the desc'))
-        def metadataObjectId = result.jobType
-        assertThat metadataObjectId.namePart,
-                   is(equalTo('the_name'))
-        assertThat metadataObjectId.type,
-                   is(equalTo(MetadataObjectId.MetadataObjectType.JOB_DEFINITION))
-        assertThat metadataObjectId.packagePart,
-                   is(equalTo(JobDefMapper.PACKAGE_NAME_WHEN_CREATED_VIA_EM))
+        def jobType = result.jobType
+        assertThat jobType.namePart,
+                   is(equalTo('SyncWebserviceJobType'))
+        assertThat jobType.type,
+                   is(equalTo(MetadataObjectId.MetadataObjectType.JOB_TYPE))
+        assertThat jobType.packagePart,
+                   is(equalTo(JobDefMapper.JOB_TYPE_PACKAGE_FROM_EM))
         def params = getMap(result.parameters)
         assertThat params,
                    is(equalTo([
-                           SYS_effectiveApplication: 'EssNativeHostingApp',
+                           SYS_effectiveApplication: 'theApp',
                            SYS_EXT_wsWsdlBaseUrl   : 'http://www.foo.com',
                            SYS_EXT_wsWsdlUrl       : '/wsdl/path',
                            SYS_EXT_wsServiceName   : 'the_service',

@@ -64,8 +64,10 @@ class DeployMojo extends AbstractMojo {
             def jobDefFactory = klass.newInstance()
             def jobDef = jobDefFactory.create()
             if (existingDefs.contains(jobDef.name)) {
+                this.log.info "Updating job definition ${jobDef.name}..."
                 jobDefDeployer.updateDefinition(jobDef)
             } else {
+                this.log.info "Creating job definition ${jobDef.name}..."
                 jobDefDeployer.createDefinition(jobDef)
             }
         }

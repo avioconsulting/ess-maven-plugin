@@ -7,9 +7,9 @@ import groovy.transform.InheritConstructors
 @InheritConstructors
 class JobDefinition extends BaseModel {
     enum Types {
-        SyncWebserviceJobType,
-        AsyncWebserviceJobType,
-        OnewayWebserviceJobType
+        SyncWebService,
+        AsyncWebService,
+        OneWayWebService
     }
 
     String name, description, wsdlPath, service, port, operation, message
