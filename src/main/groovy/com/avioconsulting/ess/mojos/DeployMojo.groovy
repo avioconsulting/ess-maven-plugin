@@ -12,6 +12,7 @@ import org.apache.maven.plugins.annotations.Component
 import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
 import org.apache.maven.project.MavenProject
+import org.joda.time.DateTimeZone
 import org.reflections.Reflections
 
 import javax.naming.InitialContext
@@ -41,6 +42,9 @@ class DeployMojo extends AbstractMojo {
     // JndiUtil.getMetadataServiceEJB(context)
     @Parameter(property = 'ess.metadata.ejb.jndiName', defaultValue = 'java:global.EssNativeHostingApp.native-ess-ejb.MetadataServiceBean!oracle.as.scheduler.MetadataServiceRemote')
     private String essMetadataEjbJndi
+
+    @Parameter(property = 'ess.server.timezone', required = true)
+    private String serverTimeZone
 
     @Component
     private MavenProject project
@@ -78,8 +82,7 @@ class DeployMojo extends AbstractMojo {
                     // update
                     this.log.info 'Updating...'
                     deployer.updateSchedule(schedule)
-                }
-                else {
+                } else {
                     this.log.info 'Creating...'
                     deployer.createSchedule(schedule)
                 }
@@ -118,7 +121,11 @@ class DeployMojo extends AbstractMojo {
     private withESSDeployer(Closure closure) {
         withContext { InitialContext context ->
             withMetadataService(context) { MetadataService service, MetadataServiceHandle handle ->
-                closure(new ESSDeployer(service, handle, this.essHostingApp, this.soaDeployUrl.toURL()))
+                closure(new ESSDeployer(service,
+                                        handle,
+                                        this.essHostingApp,
+                                        this.soaDeployUrl.toURL(),
+                                        DateTimeZone.forID(this.serverTimeZone)))
             }
         }
     }

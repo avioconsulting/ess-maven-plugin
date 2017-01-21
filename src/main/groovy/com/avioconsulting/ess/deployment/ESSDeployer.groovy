@@ -8,8 +8,10 @@ import oracle.as.scheduler.Filter
 import oracle.as.scheduler.MetadataObjectId
 import oracle.as.scheduler.MetadataService
 import oracle.as.scheduler.MetadataServiceHandle
+import org.joda.time.DateTimeZone
 
 class ESSDeployer {
+    private final DateTimeZone serverTimeZone
     private final String hostingApplication
     private final URL soaUrl
     private final MetadataService service
@@ -19,11 +21,16 @@ class ESSDeployer {
                                                               Filter.Comparator.NOT_EQUALS,
                                                               '')
 
-    ESSDeployer(MetadataService service, MetadataServiceHandle handle, String hostingApplication, URL soaUrl) {
+    ESSDeployer(MetadataService service,
+                MetadataServiceHandle handle,
+                String hostingApplication,
+                URL soaUrl,
+                DateTimeZone serverTimeZone) {
         this.handle = handle
         this.service = service
         this.soaUrl = soaUrl
         this.hostingApplication = hostingApplication
+        this.serverTimeZone = serverTimeZone
     }
 
     List<String> getExistingDefinitions() {
@@ -64,14 +71,14 @@ class ESSDeployer {
     }
 
     def createSchedule(RecurringSchedule schedule) {
-        def oracleSchedule = ScheduleMapper.getOracleSchedule(schedule)
+        def oracleSchedule = ScheduleMapper.getOracleSchedule(schedule, this.serverTimeZone)
         this.service.addScheduleDefinition(this.handle,
                                            oracleSchedule,
                                            PACKAGE_NAME_WHEN_CREATED_VIA_EM)
     }
 
     def updateSchedule(RecurringSchedule schedule) {
-        def oracleSchedule = ScheduleMapper.getOracleSchedule(schedule)
+        def oracleSchedule = ScheduleMapper.getOracleSchedule(schedule, this.serverTimeZone)
         def id = MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.SCHEDULE_DEFINITION,
                                                          PACKAGE_NAME_WHEN_CREATED_VIA_EM,
                                                          schedule.name)

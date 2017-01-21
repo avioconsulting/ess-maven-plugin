@@ -72,7 +72,7 @@ class ScheduleMapperTest {
                 excludeDates: [new LocalDate(2017, 1, 17), new LocalDate(2017, 1, 18)])
 
         // act
-        def result = ScheduleMapper.getOracleSchedule(schedule)
+        def result = ScheduleMapper.getOracleSchedule(schedule, DateTimeZone.forID('America/Chicago'))
 
         // assert
         assertThat result.name,
@@ -84,9 +84,9 @@ class ScheduleMapperTest {
         assertThat result.timeZone,
                    is(equalTo(schedule.timeZone.toTimeZone()))
         assertThat fromExplicitDates(result.inclusionDates),
-                   is(equalTo(['2017-01-15 09:15:10', '2017-01-16 09:15:10']))
+                   is(equalTo(['2017-01-15 10:15:10', '2017-01-16 10:15:10']))
         assertThat fromExplicitDates(result.exclusionDates),
-                   is(equalTo(['2017-01-17 09:15:10', '2017-01-18 09:15:10']))
+                   is(equalTo(['2017-01-17 10:15:10', '2017-01-18 10:15:10']))
         def recurrence = result.recurrence
         assertThat recurrence.frequency,
                    is(equalTo(RecurrenceFields.FREQUENCY.WEEKLY))
