@@ -4,11 +4,7 @@ import com.avioconsulting.ess.mappers.JobDefMapper
 import com.avioconsulting.ess.mappers.ScheduleMapper
 import com.avioconsulting.ess.models.JobDefinition
 import com.avioconsulting.ess.models.RecurringSchedule
-import oracle.as.scheduler.Filter
-import oracle.as.scheduler.MetadataObjectId
-import oracle.as.scheduler.MetadataService
-import oracle.as.scheduler.MetadataServiceHandle
-import oracle.as.scheduler.Schedule
+import oracle.as.scheduler.*
 import org.joda.time.DateTimeZone
 
 class MetadataWrapper {
@@ -20,12 +16,15 @@ class MetadataWrapper {
     // should result in everything being returned
     private static final Filter everythingFilter = null
     private final ScheduleMapper scheduleMapper
+    private final Closure logger
 
     MetadataWrapper(MetadataService service,
                     MetadataServiceHandle handle,
                     String hostingApplication,
                     URL soaUrl,
-                    DateTimeZone serverTimeZone) {
+                    DateTimeZone serverTimeZone,
+                    Closure logger) {
+        this.logger = logger
         this.handle = handle
         this.service = service
         this.soaUrl = soaUrl
@@ -49,6 +48,21 @@ class MetadataWrapper {
         result.collect { id -> id.namePart }
     }
 
+    private static MetadataObjectId getJobDefId(String name) {
+        MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.JOB_DEFINITION,
+                                                PACKAGE_NAME_WHEN_CREATED_VIA_EM,
+                                                name)
+    }
+
+    def deleteAllDefinitions() {
+        def existing = getExistingDefinitions()
+        existing.each { definition ->
+            def id = getJobDefId definition
+            this.logger "Deleting job definition ${id}"
+            this.service.deleteJobDefinition(this.handle, id)
+        }
+    }
+
     def createDefinition(JobDefinition definition) {
         def oracleDef = JobDefMapper.getOracleJobDef(this.soaUrl,
                                                      this.hostingApplication,
@@ -62,9 +76,7 @@ class MetadataWrapper {
         def oracleDef = JobDefMapper.getOracleJobDef(this.soaUrl,
                                                      this.hostingApplication,
                                                      definition)
-        def id = MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.JOB_DEFINITION,
-                                                         PACKAGE_NAME_WHEN_CREATED_VIA_EM,
-                                                         definition.name)
+        def id = getJobDefId definition.name
         this.service.updateJobDefinition(this.handle,
                                          id,
                                          oracleDef)
@@ -77,6 +89,21 @@ class MetadataWrapper {
         return this.service.getScheduleDefinition(this.handle, id, false)
     }
 
+    private static MetadataObjectId getScheduleId(String name) {
+        MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.SCHEDULE_DEFINITION,
+                                                PACKAGE_NAME_WHEN_CREATED_VIA_EM,
+                                                name)
+    }
+
+    def deleteAllSchedules() {
+        def existing = getExistingSchedules()
+        existing.each { schedule ->
+            def id = getScheduleId schedule
+            this.logger "Deleting schedule ${id}..."
+            this.service.deleteScheduleDefinition(this.handle, id)
+        }
+    }
+
     def createSchedule(RecurringSchedule schedule) {
         def oracleSchedule = this.scheduleMapper.getOracleSchedule(schedule)
         this.service.addScheduleDefinition(this.handle,
@@ -86,9 +113,7 @@ class MetadataWrapper {
 
     def updateSchedule(RecurringSchedule schedule) {
         def oracleSchedule = this.scheduleMapper.getOracleSchedule(schedule)
-        def id = MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.SCHEDULE_DEFINITION,
-                                                         PACKAGE_NAME_WHEN_CREATED_VIA_EM,
-                                                         schedule.name)
+        def id = getScheduleId schedule.name
         this.service.updateScheduleDefinition(this.handle,
                                               id,
                                               oracleSchedule)

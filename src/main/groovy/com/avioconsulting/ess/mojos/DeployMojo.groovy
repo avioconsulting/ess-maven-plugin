@@ -6,7 +6,6 @@ import com.avioconsulting.ess.factories.JobDefinitionFactory
 import com.avioconsulting.ess.factories.JobRequestFactory
 import com.avioconsulting.ess.factories.ScheduleFactory
 import com.avioconsulting.ess.models.JobDefinition
-import com.avioconsulting.ess.models.JobRequest
 import com.avioconsulting.ess.models.RecurringSchedule
 import oracle.as.scheduler.MetadataService
 import oracle.as.scheduler.MetadataServiceHandle
@@ -58,12 +57,20 @@ class DeployMojo extends AbstractMojo {
     @Parameter(property = 'ess.server.timezone', required = true)
     private String serverTimeZone
 
+    @Parameter(property = 'ess.clean.everything.first', defaultValue = 'false')
+    private boolean cleanFirst
+
     @Component
     private MavenProject project
 
     void execute() throws MojoExecutionException, MojoFailureException {
         // artifacts from our project, which is where the configuration is, won't be in the classpath by default
         Thread.currentThread().contextClassLoader.addURL(this.project.artifact.file.toURL())
+
+        if (this.cleanFirst) {
+            cleanEverything()
+        }
+
         withDeployers { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
             def existingDefs = metadataWrapper.existingDefinitions
             def reflections = new Reflections(this.configurationPackage)
@@ -112,6 +119,32 @@ class DeployMojo extends AbstractMojo {
         }
     }
 
+    def cleanEverything() {
+        // put this in 2 different transactions so that cancel takes effect
+        withDeployers { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
+            runtimeWrapper.cancelAllRequests()
+        }
+        withDeployers { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
+            // wait for cancel to happen
+            [1..5][0].find { index ->
+                try {
+                    runtimeWrapper.deleteAllRequests()
+                    return true
+                }
+                catch (e) {
+                    if (index == 5) {
+                        throw new Exception("Tried ${index} times and failed!", e)
+                    }
+                    this.log.info "Delete requests try 1 failed, sleeping 2 sec"
+                    Thread.sleep(2000)
+                    return false
+                }
+            }
+            metadataWrapper.deleteAllSchedules()
+            metadataWrapper.deleteAllDefinitions()
+        }
+    }
+
     private withContext(Closure closure) {
         Hashtable<String, String> props = [
                 'java.naming.factory.initial'     : 'weblogic.jndi.WLInitialContextFactory',
@@ -155,13 +188,18 @@ class DeployMojo extends AbstractMojo {
     private withDeployers(Closure closure) {
         withContext { InitialContext context ->
             withMetadataService(context) { MetadataService service, MetadataServiceHandle handle ->
+                def logger = { String msg -> this.log.info msg }
                 def metadataWrapper = new MetadataWrapper(service,
                                                           handle,
                                                           this.essHostingApp,
                                                           this.soaDeployUrl.toURL(),
-                                                          DateTimeZone.forID(this.serverTimeZone))
+                                                          DateTimeZone.forID(this.serverTimeZone),
+                                                          logger)
                 withRuntimeService(context) { RuntimeService runSvc, RuntimeServiceHandle runHandle ->
-                    def runtimeWrapper = new RuntimeWrapper(runSvc, runHandle, metadataWrapper)
+                    def runtimeWrapper = new RuntimeWrapper(runSvc,
+                                                            runHandle,
+                                                            metadataWrapper,
+                                                            logger)
                     closure(metadataWrapper, runtimeWrapper)
                 }
             }

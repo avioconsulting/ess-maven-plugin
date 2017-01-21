@@ -11,23 +11,40 @@ class RuntimeWrapper {
     // should result in everything being returned
     private static final Filter everythingFilter = null
     private static final long NO_PARENTS = -1
+    private final Closure logger
 
     RuntimeWrapper(RuntimeService runtimeService,
                    RuntimeServiceHandle serviceHandle,
-                   MetadataWrapper metadataDeployer) {
+                   MetadataWrapper metadataDeployer,
+                   Closure logger) {
 
+        this.logger = logger
         this.metadataDeployer = metadataDeployer
         this.runtimeService = runtimeService
         this.serviceHandle = serviceHandle
     }
 
+    def cancelAllRequests() {
+        def existing = getRawRequestDetails()
+        // cancel any parents first
+        existing.findAll {
+            details -> details.parent == NO_PARENTS && ![State.CANCELLED, State.CANCELLING].contains(details.state)
+        }.each { details ->
+            this.logger "Canceling request ID ${details.requestId}"
+            this.runtimeService.cancelRequest(this.serviceHandle, details.requestId)
+        }
+    }
+
+    def deleteAllRequests() {
+        def existing = getRawRequestDetails()
+        existing.each { details ->
+            this.logger "Deleting request ID ${details.requestId}"
+            this.runtimeService.deleteRequest(this.serviceHandle, details.requestId)
+        }
+    }
+
     List<JobRequestMetadata> getExistingJobRequests() {
-        def requestIds = this.runtimeService.queryRequests(this.serviceHandle,
-                                                           everythingFilter,
-                                                           RuntimeService.QueryField.SCHEDULE,
-                                                           true)
-        def requestDetails = this.runtimeService.getRequestDetails(this.serviceHandle,
-                                                                   (long[]) requestIds.toList().toArray())
+        RequestDetail[] requestDetails = getRawRequestDetails()
         // multiple filter values
         requestDetails.findAll {
             details -> ![State.CANCELLED, State.CANCELLING].contains(details.state) && details.parent == NO_PARENTS
@@ -36,8 +53,19 @@ class RuntimeWrapper {
                                    scheduleName: details.scheduleDefn.namePart,
                                    id: details.requestId)
         }
-        //println 'cancel parent request'
-        //this.runtimeService.cancelRequest(this.serviceHandle, 1)
+    }
+
+    private RequestDetail[] getRawRequestDetails() {
+        def requestIds = this.runtimeService.queryRequests(this.serviceHandle,
+                                                           everythingFilter,
+                                                           RuntimeService.QueryField.SCHEDULE,
+                                                           true)
+        // doesn't like empty array
+        if (!requestIds.any()) {
+            return []
+        }
+        this.runtimeService.getRequestDetails(this.serviceHandle,
+                                              (long[]) requestIds.toList().toArray())
     }
 
     def createRequest(JobRequest request) {
