@@ -3,6 +3,7 @@ package com.avioconsulting.ess.deployment
 import com.avioconsulting.ess.mappers.JobDefMapper
 import com.avioconsulting.ess.models.JobDefinition
 import oracle.as.scheduler.Filter
+import oracle.as.scheduler.MetadataObjectId
 import oracle.as.scheduler.MetadataService
 import oracle.as.scheduler.MetadataServiceHandle
 
@@ -40,6 +41,14 @@ class JobDefDeployer {
     }
 
     def updateDefinition(JobDefinition definition) {
-        doJobDef('UPDATE', definition)
+        def oracleDef = JobDefMapper.getOracleJobDef(this.soaUrl,
+                                                     this.hostingApplication,
+                                                     definition)
+        def id = MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.JOB_DEFINITION,
+                                                         PACKAGE_NAME_WHEN_CREATED_VIA_EM,
+                                                         definition.name)
+        this.service.updateJobDefinition(this.handle,
+                                         id,
+                                         oracleDef)
     }
 }
