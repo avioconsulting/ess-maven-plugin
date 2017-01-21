@@ -56,8 +56,8 @@ class RuntimeWrapper {
                                           jobDefId,
                                           schedule,
                                           trigger,
-                                          null,
-                                          null,
+                                          startDate,
+                                          endDate,
                                           params)
     }
 }
