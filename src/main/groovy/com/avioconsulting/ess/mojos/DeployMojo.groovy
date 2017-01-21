@@ -71,9 +71,9 @@ class DeployMojo extends AbstractMojo {
             cleanEverything()
         }
 
-        withDeployers { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
+        def reflections = new Reflections(this.configurationPackage)
+        withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
             def existingDefs = metadataWrapper.existingDefinitions
-            def reflections = new Reflections(this.configurationPackage)
             JobDefinition jobDef
             reflections.getSubTypesOf(JobDefinitionFactory).each { klass ->
                 def jobDefFactory = klass.newInstance()
@@ -86,6 +86,7 @@ class DeployMojo extends AbstractMojo {
                     metadataWrapper.createDefinition(jobDef)
                 }
             }
+
             def existingSchedules = metadataWrapper.existingSchedules
             RecurringSchedule schedule
             reflections.getSubTypesOf(ScheduleFactory).each { klass ->
@@ -108,6 +109,10 @@ class DeployMojo extends AbstractMojo {
                     metadataWrapper.createSchedule(schedule)
                 }
             }
+        }
+
+        // job requests are dependent on schedules+jobs being committed first
+        withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
             def existing = runtimeWrapper.existingJobRequests
             println "Existing requests are ${existing}"
             reflections.getSubTypesOf(JobRequestFactory).each { klass ->
@@ -121,10 +126,10 @@ class DeployMojo extends AbstractMojo {
 
     def cleanEverything() {
         // put this in 2 different transactions so that cancel takes effect
-        withDeployers { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
+        withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
             runtimeWrapper.cancelAllRequests()
         }
-        withDeployers { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
+        withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
             // wait for cancel to happen
             [1..5][0].find { index ->
                 try {
@@ -185,7 +190,7 @@ class DeployMojo extends AbstractMojo {
         }
     }
 
-    private withDeployers(Closure closure) {
+    private withDeployerTransaction(Closure closure) {
         withContext { InitialContext context ->
             withMetadataService(context) { MetadataService service, MetadataServiceHandle handle ->
                 def logger = { String msg -> this.log.info msg }
