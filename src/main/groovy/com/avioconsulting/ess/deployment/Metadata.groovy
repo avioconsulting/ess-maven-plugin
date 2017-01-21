@@ -17,9 +17,8 @@ class Metadata {
     private final MetadataService service
     private final MetadataServiceHandle handle
     public static final String PACKAGE_NAME_WHEN_CREATED_VIA_EM = '/oracle/apps/ess/custom/'
-    private static final Filter everythingFilter = new Filter('name',
-                                                              Filter.Comparator.NOT_EQUALS,
-                                                              '')
+    // should result in everything being returned
+    private static final Filter everythingFilter = null
     private final ScheduleMapper scheduleMapper
 
     Metadata(MetadataService service,

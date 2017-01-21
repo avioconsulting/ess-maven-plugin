@@ -7,6 +7,8 @@ class Runtime {
     private final RuntimeService runtimeService
     private final RuntimeServiceHandle serviceHandle
     private final Metadata metadataDeployer
+    // should result in everything being returned
+    private static final Filter everythingFilter = null
 
     Runtime(RuntimeService runtimeService,
             RuntimeServiceHandle serviceHandle,
@@ -19,9 +21,7 @@ class Runtime {
 
     def doesJobRequestExist(JobRequest request) {
         def results = this.runtimeService.queryRequests(this.serviceHandle,
-                                                        new Filter('schedule',
-                                                                   Filter.Comparator.EQUALS,
-                                                                   request.schedule.name),
+                                                        everythingFilter,
                                                         RuntimeService.QueryField.SCHEDULE,
                                                         true)
         results.any()
