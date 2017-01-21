@@ -147,7 +147,7 @@ class DeployMojo extends AbstractMojo {
                 if (index == 5) {
                     throw new Exception("Tried ${index} times and failed!", e)
                 }
-                this.log.info "Delete requests try 1 failed, sleeping 2 sec"
+                this.log.info "Delete requests try ${index} failed, sleeping 2 sec"
                 Thread.sleep(2000)
                 return false
             }
