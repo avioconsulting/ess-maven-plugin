@@ -184,6 +184,31 @@ class ScheduleBuilderTest {
     }
 
     @Test
+    void getSchedule_NoHolidays() {
+        // arrange
+
+        // act
+        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
+                                                   displayName: 'the schedule',
+                                                   description: 'Weekly schedule on mondays',
+                                                   startDate: new LocalDate(2017, 1, 1),
+                                                   endDate: new LocalDate(2017, 2, 27),
+                                                   timeOfDay: new LocalTime(9, 15, 10),
+                                                   timeZone: DateTimeZone.forID('America/Denver'),
+                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Monday],
+                                                   holidays: [],
+                                                   alternateDirection: Direction.Backward
+
+        // assert
+        assertThat schedule.daysOfWeek,
+                   is(equalTo([RecurringSchedule.DayOfWeek.Monday]))
+        assertThat schedule.includeDates.size(),
+                   is(equalTo(0))
+        assertThat schedule.excludeDates.size(),
+                   is(equalTo(0))
+    }
+
+    @Test
     void getJobExecutionDates_BeginOnSunday_RepeatMondays_EndSameYear() {
         // arrange
         def beginningDate = new LocalDate(2017, 1, 1)
