@@ -1,7 +1,7 @@
 package com.avioconsulting.ess.mojos
 
-import com.avioconsulting.ess.deployment.MetadataWrapper
-import com.avioconsulting.ess.deployment.RuntimeWrapper
+import com.avioconsulting.ess.deployment.MetadataServiceWrapper
+import com.avioconsulting.ess.deployment.RuntimeServiceWrapper
 import com.avioconsulting.ess.factories.JobDefinitionFactory
 import com.avioconsulting.ess.factories.JobRequestFactory
 import com.avioconsulting.ess.factories.ScheduleFactory
@@ -75,7 +75,7 @@ class DeployMojo extends AbstractMojo {
             }
 
             def reflections = new Reflections(this.configurationPackage)
-            withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
+            withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
                 def existingDefs = metadataWrapper.existingDefinitions
                 reflections.getSubTypesOf(JobDefinitionFactory).each { klass ->
                     def jobDefFactory = klass.newInstance()
@@ -115,7 +115,7 @@ class DeployMojo extends AbstractMojo {
             }
 
             // job requests are dependent on schedules+jobs being committed first
-            withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
+            withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
                 def existing = runtimeWrapper.existingJobRequests
                 reflections.getSubTypesOf(JobRequestFactory).each { klass ->
                     def jobRequestFactory = klass.newInstance()
@@ -137,13 +137,13 @@ class DeployMojo extends AbstractMojo {
 
     def cleanEverything() {
         // put this in 2 different transactions so that cancel takes effect
-        withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
+        withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
             runtimeWrapper.cancelAllRequests()
         }
         [1..DELETE_RETRIES][0].find { index ->
             try {
                 // when we retry, we have to start a whole new transaction
-                withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
+                withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
                     runtimeWrapper.deleteAllRequests()
                     metadataWrapper.deleteAllSchedules()
                     metadataWrapper.deleteAllDefinitions()
@@ -204,17 +204,17 @@ class DeployMojo extends AbstractMojo {
     private withDeployerTransaction(Closure closure) {
         withMetadataService(this.context) { MetadataService service, MetadataServiceHandle handle ->
             def logger = { String msg -> this.log.info msg }
-            def metadataWrapper = new MetadataWrapper(service,
-                                                      handle,
-                                                      this.essHostingApp,
-                                                      this.soaDeployUrl.toURL(),
-                                                      DateTimeZone.forID(this.serverTimeZone),
-                                                      logger)
+            def metadataWrapper = new MetadataServiceWrapper(service,
+                                                             handle,
+                                                             this.essHostingApp,
+                                                             this.soaDeployUrl.toURL(),
+                                                             DateTimeZone.forID(this.serverTimeZone),
+                                                             logger)
             withRuntimeService(this.context) { RuntimeService runSvc, RuntimeServiceHandle runHandle ->
-                def runtimeWrapper = new RuntimeWrapper(runSvc,
-                                                        runHandle,
-                                                        metadataWrapper,
-                                                        logger)
+                def runtimeWrapper = new RuntimeServiceWrapper(runSvc,
+                                                               runHandle,
+                                                               metadataWrapper,
+                                                               logger)
                 closure(metadataWrapper, runtimeWrapper)
             }
         }

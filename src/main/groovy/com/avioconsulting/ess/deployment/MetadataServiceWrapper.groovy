@@ -7,7 +7,7 @@ import com.avioconsulting.ess.models.RecurringSchedule
 import oracle.as.scheduler.*
 import org.joda.time.DateTimeZone
 
-class MetadataWrapper {
+class MetadataServiceWrapper {
     private final String hostingApplication
     private final URL soaUrl
     private final MetadataService service
@@ -18,12 +18,12 @@ class MetadataWrapper {
     private final ScheduleMapper scheduleMapper
     private final Closure logger
 
-    MetadataWrapper(MetadataService service,
-                    MetadataServiceHandle handle,
-                    String hostingApplication,
-                    URL soaUrl,
-                    DateTimeZone serverTimeZone,
-                    Closure logger) {
+    MetadataServiceWrapper(MetadataService service,
+                           MetadataServiceHandle handle,
+                           String hostingApplication,
+                           URL soaUrl,
+                           DateTimeZone serverTimeZone,
+                           Closure logger) {
         this.logger = logger
         this.handle = handle
         this.service = service
