@@ -122,6 +122,35 @@ class ScheduleBuilderTest {
     }
 
     @Test
+    void getSchedule_InclusionDateIsRegularlyScheduledDate() {
+        // arrange
+
+        // act
+        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
+                                                   displayName: 'the schedule',
+                                                   description: 'Weekly schedule',
+                                                   startDate: new LocalDate(2017, 1, 1),
+                                                   endDate: new LocalDate(2017, 2, 27),
+                                                   timeOfDay: new LocalTime(9, 15, 10),
+                                                   timeZone: DateTimeZone.forID('America/Denver'),
+                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Monday,
+                                                                RecurringSchedule.DayOfWeek.Tuesday],
+                                                   holidays: [new LocalDate(2017, 1, 31)],
+                                                   alternateDirection: Direction.Backward
+
+        // assert
+        assertThat schedule.recurrenceCount,
+                   is(equalTo(0))
+        // the alternate date for the 31st holiday is the 30th but that's a regular scheduled job date anyways
+        assertThat schedule.includeDates.size(),
+                   is(equalTo(0))
+        assertThat schedule.excludeDates.size(),
+                   is(equalTo(1))
+        assertThat schedule.excludeDates[0],
+                   is(equalTo(new LocalDate(2017, 1, 31)))
+    }
+
+    @Test
     void getSchedule_InclusionBeforeStart() {
         // arrange
 

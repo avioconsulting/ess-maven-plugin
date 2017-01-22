@@ -44,10 +44,10 @@ class ScheduleBuilder {
         Set<LocalDate> includeDates = getAlternateDates(excludeDates,
                                                         map.alternateDirection,
                                                         holidays)
-        // don't want alternate dates before the start date
         includeDates = includeDates.findAll { LocalDate date ->
+            // alternate dates before the start date don't make sense
             date >= startDate
-        }
+        } - jobDates // no need to include already scheduled dates
         new RecurringSchedule(name: map.name,
                               description: map.description,
                               displayName: map.displayName,
