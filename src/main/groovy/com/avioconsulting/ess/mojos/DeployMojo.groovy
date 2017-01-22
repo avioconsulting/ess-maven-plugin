@@ -23,6 +23,8 @@ import javax.naming.InitialContext
 
 @Mojo(name = 'deploy')
 class DeployMojo extends AbstractMojo {
+    private final int DELETE_RETRIES = 10
+
     @Parameter(property = 'weblogic.user', required = true)
     private String weblogicUser
 
@@ -136,7 +138,7 @@ class DeployMojo extends AbstractMojo {
         withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
             runtimeWrapper.cancelAllRequests()
         }
-        [1..5][0].find { index ->
+        [1..DELETE_RETRIES][0].find { index ->
             try {
                 // when we retry, we have to start a whole new transaction
                 withDeployerTransaction { MetadataWrapper metadataWrapper, RuntimeWrapper runtimeWrapper ->
