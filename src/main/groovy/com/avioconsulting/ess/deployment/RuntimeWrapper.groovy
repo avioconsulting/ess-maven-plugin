@@ -93,7 +93,7 @@ class RuntimeWrapper {
         def endDate = null
         def params = new RequestParameters()
         this.runtimeService.submitRequest(this.serviceHandle,
-                                          request.description,
+                                          request.submissionNotes,
                                           jobDefId,
                                           schedule,
                                           trigger,

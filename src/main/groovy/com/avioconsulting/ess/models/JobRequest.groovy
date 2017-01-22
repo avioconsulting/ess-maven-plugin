@@ -8,5 +8,5 @@ import groovy.transform.InheritConstructors
 class JobRequest extends BaseModel {
     JobDefinition jobDefinition
     RecurringSchedule schedule
-    String description
+    String submissionNotes
 }
