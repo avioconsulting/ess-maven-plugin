@@ -124,8 +124,8 @@ class DeployMojo extends AbstractMojo {
                         data.scheduleName == jobRequest.schedule.name && data.jobDefinitionName == jobRequest.jobDefinition.name
                     }
                     if (existingJobRequest) {
-                        this.log.info "Updating job request ${jobRequest.submissionNotes} to ensure schedule is accurate..."
-                        runtimeWrapper.updateRequestSchedule(existingJobRequest)
+                        this.log.info "Updating job request ${jobRequest.submissionNotes}..."
+                        runtimeWrapper.updateRequest(existingJobRequest)
                     } else {
                         this.log.info "Creating job request ${jobRequest.submissionNotes}..."
                         runtimeWrapper.createRequest(jobRequest)

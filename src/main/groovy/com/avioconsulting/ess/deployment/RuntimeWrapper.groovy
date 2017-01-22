@@ -8,7 +8,7 @@ import org.joda.time.DateTime
 class RuntimeWrapper {
     private final RuntimeService runtimeService
     private final RuntimeServiceHandle serviceHandle
-    private final MetadataWrapper metadataDeployer
+    private final MetadataWrapper metadataWrapper
     // should result in everything being returned
     private static final Filter everythingFilter = null
     private static final long NO_PARENTS = -1
@@ -20,7 +20,7 @@ class RuntimeWrapper {
                    Closure logger) {
 
         this.logger = logger
-        this.metadataDeployer = metadataDeployer
+        this.metadataWrapper = metadataDeployer
         this.runtimeService = runtimeService
         this.serviceHandle = serviceHandle
     }
@@ -74,7 +74,19 @@ class RuntimeWrapper {
         requestIds.toList()
     }
 
-    def updateRequestSchedule(JobRequestMetadata metadata) {
+    def updateRequest(JobRequestMetadata metadata) {
+        // parameters from an updated job definition don't seem to make it in
+        def jobDef = this.metadataWrapper.getOracleJobDefinition(metadata.jobDefinitionName)
+        this.logger 'Updating parameters on existing job request from job definition...'
+        jobDef.parameters.all.each { param ->
+            this.runtimeService.updateRequestParameter(this.serviceHandle,
+                                                       metadata.id,
+                                                       param.name,
+                                                       param.value)
+        }
+        this.logger 'Pointing job request at newly updated schedule...'
+        // updating schedule creates a new 'pending' job request for the next date
+        // this has to happen after we update the parameters from the job definition above
         def scheduleId = MetadataWrapper.getScheduleId(metadata.scheduleName)
         this.runtimeService.replaceSchedule(this.serviceHandle, metadata.id, scheduleId)
     }
@@ -83,7 +95,7 @@ class RuntimeWrapper {
         def jobDefId = MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.JOB_DEFINITION,
                                                                MetadataWrapper.PACKAGE_NAME_WHEN_CREATED_VIA_EM,
                                                                request.jobDefinition.name)
-        def schedule = this.metadataDeployer.getOracleSchedule(request.schedule)
+        def schedule = this.metadataWrapper.getOracleSchedule(request.schedule)
         // using schedules not triggers
         def trigger = null
         def recurrence = schedule.recurrence
