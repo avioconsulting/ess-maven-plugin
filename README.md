@@ -76,6 +76,10 @@ class SimplyBetter implements JobDefinitionFactory, ScheduleFactory, JobRequestF
 
 ## FAQ
 
+### Is there a way to create all this w/o the requests firing off?
+
+Yes! The ess.hold.requests property (holdRequests config setting) will create job requests in a 'hold' state. They won't execute but if they are resumed in the console will execute.
+
 ### What happens if schedules, etc. are already out there?
 
 The schedule and job definition will be updated in place. If the job request already exists, it will be updated to ensure it matches the schedule. 

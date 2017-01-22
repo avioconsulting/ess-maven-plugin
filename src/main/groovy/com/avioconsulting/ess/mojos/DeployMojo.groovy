@@ -60,6 +60,9 @@ class DeployMojo extends AbstractMojo {
     @Parameter(property = 'ess.clean.everything.first', defaultValue = 'false')
     private boolean cleanFirst
 
+    @Parameter(property = 'ess.hold.requests', defaultValue = 'false')
+    private boolean holdRequests
+
     @Component
     private MavenProject project
 
@@ -214,7 +217,8 @@ class DeployMojo extends AbstractMojo {
                 def runtimeWrapper = new RuntimeServiceWrapper(runSvc,
                                                                runHandle,
                                                                metadataWrapper,
-                                                               logger)
+                                                               logger,
+                                                               this.holdRequests)
                 closure(metadataWrapper, runtimeWrapper)
             }
         }

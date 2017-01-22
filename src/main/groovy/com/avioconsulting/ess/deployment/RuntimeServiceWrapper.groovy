@@ -13,12 +13,15 @@ class RuntimeServiceWrapper {
     private static final Filter everythingFilter = null
     private static final long NO_PARENTS = -1
     private final Closure logger
+    private final boolean holdRequests
 
     RuntimeServiceWrapper(RuntimeService runtimeService,
                           RuntimeServiceHandle serviceHandle,
                           MetadataServiceWrapper metadataDeployer,
-                          Closure logger) {
+                          Closure logger,
+                          boolean holdRequests) {
 
+        this.holdRequests = holdRequests
         this.logger = logger
         this.metadataWrapper = metadataDeployer
         this.runtimeService = runtimeService
@@ -78,17 +81,27 @@ class RuntimeServiceWrapper {
         // parameters from an updated job definition don't seem to make it in unless we explicitly update
         def jobDef = this.metadataWrapper.getOracleJobDefinition(metadata.jobDefinitionName)
         this.logger 'Updating parameters on existing job request from job definition...'
+        def runtimeService = this.runtimeService
+        def jobRequestId = metadata.id
         jobDef.parameters.all.each { param ->
-            this.runtimeService.updateRequestParameter(this.serviceHandle,
-                                                       metadata.id,
-                                                       param.name,
-                                                       param.value)
+            runtimeService.updateRequestParameter(this.serviceHandle,
+                                                  jobRequestId,
+                                                  param.name,
+                                                  param.value)
         }
-        this.logger 'Pointing job request at newly updated schedule...'
+        this.logger "Pointing job request ${jobRequestId} at newly updated schedule..."
         // updating schedule creates a new 'pending' job request for the next date
         // this has to happen after we update the parameters from the job definition above
         def scheduleId = MetadataServiceWrapper.getScheduleId(metadata.scheduleName)
-        this.runtimeService.replaceSchedule(this.serviceHandle, metadata.id, scheduleId)
+        runtimeService.replaceSchedule(this.serviceHandle, jobRequestId, scheduleId)
+        def currentState = runtimeService.getRequestState(this.serviceHandle, jobRequestId)
+        if (this.holdRequests && currentState != State.HOLD) {
+            this.logger 'Moving request to hold status'
+            runtimeService.holdRequest(this.serviceHandle, jobRequestId)
+        } else if (!this.holdRequests && currentState == State.HOLD) {
+            this.logger 'Releasing request from hold'
+            runtimeService.releaseRequest(this.serviceHandle, jobRequestId)
+        }
     }
 
     def createRequest(JobRequest request) {
@@ -103,13 +116,19 @@ class RuntimeServiceWrapper {
         // requests created in EM had no end date on them
         def endDate = null
         def params = new RequestParameters()
-        this.runtimeService.submitRequest(this.serviceHandle,
-                                          request.submissionNotes,
-                                          jobDefId,
-                                          schedule,
-                                          trigger,
-                                          startDate,
-                                          endDate,
-                                          params)
+        def runtimeService = this.runtimeService
+        def requestId = runtimeService.submitRequest(this.serviceHandle,
+                                                     request.submissionNotes,
+                                                     jobDefId,
+                                                     schedule,
+                                                     trigger,
+                                                     startDate,
+                                                     endDate,
+                                                     params)
+        this.logger "Request ${requestId} created..."
+        if (this.holdRequests) {
+            this.logger 'Putting request in a HOLD state'
+            runtimeService.holdRequest(this.serviceHandle, requestId)
+        }
     }
 }
