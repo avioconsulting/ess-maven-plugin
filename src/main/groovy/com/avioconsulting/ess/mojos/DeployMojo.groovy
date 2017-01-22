@@ -89,6 +89,8 @@ class DeployMojo extends AbstractMojo {
                     }
                 }
 
+                this.log.info 'Job definitions complete'
+
                 def existingSchedules = metadataWrapper.existingSchedules
                 reflections.getSubTypesOf(ScheduleFactory).each { klass ->
                     def scheduleFactory = klass.newInstance()
