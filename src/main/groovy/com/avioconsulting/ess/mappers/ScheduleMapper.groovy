@@ -78,7 +78,7 @@ class ScheduleMapper {
         }
         def dateTime = new LocalDate().toDateTime(ourSchedule.timeOfDay, ourSchedule.timeZone)
         def dateTimeThisMachine = dateTime.toDateTime(this.thisMachineTimeZone)
-        // ESS seems to assume the recurTime is in the time zone of the machine
+        // ESS seems to assume the recurTime is in the time zone of the machine running this (not necessarily server)
         recurrence.recurTime = getTimeOfDay(dateTimeThisMachine.toLocalTime())
         def oracle = new Schedule(ourSchedule.name,
                                   ourSchedule.description,
