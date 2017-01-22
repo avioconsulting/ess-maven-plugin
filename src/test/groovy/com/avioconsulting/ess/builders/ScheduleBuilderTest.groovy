@@ -184,6 +184,31 @@ class ScheduleBuilderTest {
     }
 
     @Test
+    void getSchedule_Weekend() {
+        // arrange
+
+        // act
+        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
+                                                   displayName: 'the schedule',
+                                                   description: 'Weekly schedule on mondays',
+                                                   startDate: new LocalDate(2017, 1, 1),
+                                                   endDate: new LocalDate(2017, 2, 27),
+                                                   timeOfDay: new LocalTime(9, 15, 10),
+                                                   timeZone: DateTimeZone.forID('America/Denver'),
+                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Sunday],
+                                                   holidays: [],
+                                                   alternateDirection: Direction.Backward
+
+        // assert
+        assertThat schedule.daysOfWeek,
+                   is(equalTo([RecurringSchedule.DayOfWeek.Sunday]))
+        assertThat schedule.includeDates.size(),
+                   is(equalTo(0))
+        assertThat schedule.excludeDates.size(),
+                   is(equalTo(0))
+    }
+
+    @Test
     void getSchedule_NoHolidays() {
         // arrange
 
@@ -329,6 +354,27 @@ class ScheduleBuilderTest {
                            '2017-02-21',
                            '2017-02-27',
                            '2017-02-28'
+                   ]))
+    }
+
+    @Test
+    void getJobExecutionDates_Weekend() {
+        // arrange
+        def beginningDate = new LocalDate(2017, 1, 1)
+
+        // act
+        def result = getJobExecutionDates(beginningDate,
+                                          new LocalDate(2017, 1, 31),
+                                          [RecurringSchedule.DayOfWeek.Sunday])
+
+        // assert
+        assertThat result,
+                   is(equalTo([
+                           '2017-01-01',
+                           '2017-01-08',
+                           '2017-01-15',
+                           '2017-01-22',
+                           '2017-01-29'
                    ]))
     }
 
