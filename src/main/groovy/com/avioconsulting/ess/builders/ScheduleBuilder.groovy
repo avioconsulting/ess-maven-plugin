@@ -73,20 +73,13 @@ class ScheduleBuilder {
     private static Set<LocalDate> getJobExecutionDates(LocalDate beginningDate,
                                                        LocalDate endDate,
                                                        List<RecurringSchedule.DayOfWeek> daysOfWeek) {
-        def calculator = LocalDateKitCalculatorsFactory.forwardCalculator(
-                NO_HOLIDAY_CALENDAR)
-        calculator.startDate = beginningDate
         Set<LocalDate> list = []
-        // don't want order they're listed to matter
-        daysOfWeek = daysOfWeek.sort()
-        while (calculator.currentBusinessDate <= endDate) {
-            daysOfWeek.each { day ->
-                while (getDayOfWeek(calculator.currentBusinessDate) != day) {
-                    calculator.moveByBusinessDays(1)
-                }
-                list << calculator.currentBusinessDate
+        def currentDate = new LocalDate(beginningDate)
+        while (currentDate <= endDate) {
+            if (daysOfWeek.contains(getDayOfWeek(currentDate))) {
+                list << currentDate
             }
-            calculator.moveByBusinessDays(1)
+            currentDate = currentDate.plusDays(1)
         }
         list
     }
