@@ -100,4 +100,6 @@ You can force deletion of ALL ESS data by running with the property `ess.clean.e
 
 ## Changing the web service type
 
-If you change the web service type (e.g. from 2 way synchronous to 1 way), the job definition gets updated but not the job request. You'll need to manually delete the job requests (including the parent requests) and then run again. The code for the plugin could be altered to detect if the job type is changing and then cancel and resubmit the request.
+If you change the web service type (e.g. from 2 way synchronous to 1 way), the job definition is supposed to be updated with the new job type but that does not appeat to hapepn. The job request also does not update. You'll need to manually delete the job requests (including the parent requests) and job definitions and then run again
+
+A TODO for the plugin is to detect if the job type is changing and if so: cancel exists requests, remove the job definition, then allow the job definition + requests to be recreated.
