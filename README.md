@@ -98,6 +98,10 @@ You can force deletion of ALL ESS data by running with the property `ess.clean.e
 
 ## Limitations
 
+## Multi-module/Reactor projects
+
+Most projects will fall into this category. Because of the way the class loaders work, you'll need to ensure that the factory classes (see above) AND any resources you load from the classpath (e.g. request XML files) are uniquely named across projects.
+
 ## Changing the web service type
 
 If you change the web service type (e.g. from 2 way synchronous to 1 way), the job definition is supposed to be updated with the new job type but that does not appeat to hapepn. The job request also does not update. You'll need to manually delete the job requests (including the parent requests) and job definitions and then run again
