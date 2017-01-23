@@ -18,6 +18,8 @@ import org.apache.maven.plugins.annotations.Parameter
 import org.apache.maven.project.MavenProject
 import org.joda.time.DateTimeZone
 import org.reflections.Reflections
+import org.reflections.util.ClasspathHelper
+import org.reflections.util.ConfigurationBuilder
 
 import javax.naming.InitialContext
 
@@ -69,15 +71,13 @@ class DeployMojo extends AbstractMojo {
     private InitialContext context
 
     void execute() throws MojoExecutionException, MojoFailureException {
-        // artifacts from our project, which is where the configuration is, won't be in the classpath by default
-        Thread.currentThread().contextClassLoader.addURL(this.project.artifact.file.toURL())
-
         withContext {
             if (this.cleanFirst) {
                 cleanEverything()
             }
 
-            def reflections = new Reflections(this.configurationPackage)
+            def reflections = getReflectionsUtility()
+
             withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
                 def existingDefs = metadataWrapper.existingDefinitions
                 reflections.getSubTypesOf(JobDefinitionFactory).each { klass ->
@@ -138,6 +138,19 @@ class DeployMojo extends AbstractMojo {
         }
     }
 
+    private getReflectionsUtility() {
+        // artifacts from our project, which is where the configuration is, won't be in the classpath by default
+        ClasspathHelper.contextClassLoader().addURL(this.project.artifact.file.toURL())
+        // used more complex config/construction due to
+        def configBuilder = new ConfigurationBuilder()
+                .addClassLoader(ClasspathHelper.contextClassLoader())
+                .addClassLoader(ClasspathHelper.staticClassLoader())
+                .addUrls(this.project.artifact.file.toURL())
+                .forPackages(this.configurationPackage)
+
+        new Reflections(configBuilder)
+    }
+
     def cleanEverything() {
         // put this in 2 different transactions so that cancel takes effect
         withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
@@ -146,10 +159,11 @@ class DeployMojo extends AbstractMojo {
         [1..DELETE_RETRIES][0].find { index ->
             try {
                 // when we retry, we have to start a whole new transaction
-                withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
-                    runtimeWrapper.deleteAllRequests()
-                    metadataWrapper.deleteAllSchedules()
-                    metadataWrapper.deleteAllDefinitions()
+                withDeployerTransaction {
+                    MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
+                        runtimeWrapper.deleteAllRequests()
+                        metadataWrapper.deleteAllSchedules()
+                        metadataWrapper.deleteAllDefinitions()
                 }
                 return true
             }
