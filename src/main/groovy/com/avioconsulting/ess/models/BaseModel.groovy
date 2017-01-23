@@ -18,4 +18,21 @@ class BaseModel {
             }
         }
     }
+
+    protected static validateName(String name) {
+        def errors = []
+        if (name.contains(' ')) {
+            errors << 'spaces'
+        }
+        if (name =~ /^[0-9].*/) {
+            errors << 'leading numbers'
+        }
+        if (!(name =~ /^[a-zA-Z][a-zA-Z0-9_]*$/)) {
+            errors << 'special characters'
+        }
+        if (errors.any()) {
+            throw new Exception("Name value '${name}' not allowed. ESS does not allow ${errors.join(', ')}!")
+        }
+        true
+    }
 }

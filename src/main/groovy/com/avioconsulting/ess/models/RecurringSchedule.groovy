@@ -35,5 +35,6 @@ class RecurringSchedule extends BaseModel {
 
     RecurringSchedule(Map map) {
         super(map << [recurrenceCount: (map.recurrenceCount ?: 0)])
+        validateName(this.name)
     }
 }

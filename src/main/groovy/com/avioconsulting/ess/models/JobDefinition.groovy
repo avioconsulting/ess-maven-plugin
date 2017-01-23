@@ -14,4 +14,9 @@ class JobDefinition extends BaseModel {
 
     String name, description, wsdlPath, service, port, operation, message
     Types jobType
+
+    JobDefinition(Map map) {
+        super(map)
+        validateName(this.name)
+    }
 }
