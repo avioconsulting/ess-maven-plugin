@@ -9,7 +9,7 @@ Functionality:
 ## Usage
 
 ### POM Setup
- 
+
 In your project POM, it's important to set 2 properties:
 1. The `ess.server.timezone` POM property (or `serverTimeZone` plugin/config) needs to match the time zone of the server you deploy to. This is due to observed quirks with deploying to ESS
 2. The `ess.config.package` POM property (or `configurationPackage` plugin/config) should be set to the Java/Groovy package that your expose your factories (see below)
@@ -82,7 +82,7 @@ Yes! The ess.hold.requests property (holdRequests config setting) will create jo
 
 ### What happens if schedules, etc. are already out there?
 
-The schedule and job definition will be updated in place. If the job request already exists, it will be updated to ensure it matches the schedule. 
+The schedule and job definition will be updated in place. If the job request already exists, it will be updated to ensure it matches the schedule.
 
 ## How will this look in EM?
 
@@ -95,3 +95,9 @@ Not right now.
 ### Purging
 
 You can force deletion of ALL ESS data by running with the property `ess.clean.everything.first` on the Maven command line.
+
+## Limitations
+
+## Changing the web service type
+
+If you change the web service type (e.g. from 2 way synchronous to 1 way), the job definition gets updated but not the job request. You'll need to manually delete the job requests (including the parent requests) and then run again. The code for the plugin could be altered to detect if the job type is changing and then cancel and resubmit the request.
