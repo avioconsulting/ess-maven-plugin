@@ -108,6 +108,6 @@ Most projects will fall into this category. Because of the way the class loaders
 
 ## Changing the web service type
 
-If you change the web service type (e.g. from 2 way synchronous to 1 way), the job definition is supposed to be updated with the new job type but that does not appeat to hapepn. The job request also does not update. You'll need to manually delete the job requests (including the parent requests) and job definitions and then run again
+If you change the web service type (e.g. from 2 way synchronous to 1 way), the job definition is supposed to be updated with the new job type but that does not appear to happen. In addition, the job request is not updated with new request parameters (or the new job type). You'll need to manually (using EM) delete the job requests (including the parent requests) and job definitions and then run again.
 
 A TODO for the plugin is to detect if the job type is changing and if so: cancel exists requests, remove the job definition, then allow the job definition + requests to be recreated.
