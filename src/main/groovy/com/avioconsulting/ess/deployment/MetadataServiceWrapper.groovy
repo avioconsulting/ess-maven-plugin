@@ -83,16 +83,12 @@ class MetadataServiceWrapper {
     }
 
     oracle.as.scheduler.JobDefinition getOracleJobDefinition(String name) {
-        def id = MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.JOB_DEFINITION,
-                                                         PACKAGE_NAME_WHEN_CREATED_VIA_EM,
-                                                         name)
+        def id = getJobDefId name
         return this.service.getJobDefinition(this.handle, id, false)
     }
 
     Schedule getOracleSchedule(RecurringSchedule schedule) {
-        def id = MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.SCHEDULE_DEFINITION,
-                                                         PACKAGE_NAME_WHEN_CREATED_VIA_EM,
-                                                         schedule.name)
+        def id = getScheduleId schedule.name
         return this.service.getScheduleDefinition(this.handle, id, false)
     }
 
