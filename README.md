@@ -92,13 +92,13 @@ The schedule and job definition will be updated in place. If the job request alr
 
 The way ESS seems to work is that there are 2 visible job requests for each "setup" you make. The parent one, which lasts the life of the schedule and then a child one that represents the next execution. Whenever you run this deployment with an existing job request, the next pending execution will be canceled and a new one will be created with the proper date for the updated schedule. The original parent will remain.
 
-### Are deletions supported?
+### Will the plugin delete old schedules/job requests?
 
-Not right now.
+Not right now. It only adds or updates.
 
 ### Purging
 
-You can force deletion of ALL ESS data by running with the property `ess.clean.everything.first` on the Maven command line.
+You can force deletion of ALL ESS data by running with the property `ess.clean.everything.first` on the Maven command line. This should only be used in a development environment.
 
 ## Limitations
 
