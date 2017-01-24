@@ -54,7 +54,8 @@ class BaseModelTest {
         }
 
         assertThat error.message,
-                   is(equalTo( "Name value '123_ABC' not allowed. ESS does not allow leading numbers, special characters!"))
+                   is(equalTo(
+                           "Name value '123_ABC' not allowed. ESS does not allow leading numbers, special characters!"))
     }
 
     @Test
@@ -80,6 +81,6 @@ class BaseModelTest {
         }
 
         assertThat error.message,
-                   is(equalTo( "Name value 'ABC DEF' not allowed. ESS does not allow spaces, special characters!"))
+                   is(equalTo("Name value 'ABC DEF' not allowed. ESS does not allow spaces, special characters!"))
     }
 }
