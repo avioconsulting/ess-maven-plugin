@@ -105,9 +105,7 @@ class RuntimeServiceWrapper {
     }
 
     def createRequest(JobRequest request) {
-        def jobDefId = MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.JOB_DEFINITION,
-                                                               MetadataServiceWrapper.PACKAGE_NAME_WHEN_CREATED_VIA_EM,
-                                                               request.jobDefinition.name)
+        def jobDefId = MetadataServiceWrapper.getJobDefId request.jobDefinition.name
         def schedule = this.metadataWrapper.getOracleSchedule(request.schedule)
         // using schedules not triggers
         def trigger = null

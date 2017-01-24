@@ -12,7 +12,7 @@ class MetadataServiceWrapper {
     private final URL soaUrl
     private final MetadataService service
     private final MetadataServiceHandle handle
-    public static final String PACKAGE_NAME_WHEN_CREATED_VIA_EM = '/oracle/apps/ess/custom/'
+    private static final String PACKAGE_NAME_WHEN_CREATED_VIA_EM = '/oracle/apps/ess/custom/'
     // should result in everything being returned
     private static final Filter everythingFilter = null
     private final ScheduleMapper scheduleMapper
@@ -48,7 +48,7 @@ class MetadataServiceWrapper {
         result.collect { id -> id.namePart }
     }
 
-    private static MetadataObjectId getJobDefId(String name) {
+    static MetadataObjectId getJobDefId(String name) {
         MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.JOB_DEFINITION,
                                                 PACKAGE_NAME_WHEN_CREATED_VIA_EM,
                                                 name)
