@@ -1,6 +1,7 @@
 # ESS Maven Plugin
 
 Functionality:
+
 * Takes care of EJB interactions with ESS
 * Easy to write Groovy classes are used in your project POMs to declare schedules (when), job definitions (what), and job requests (ties together schedule + job definition)
 * Updates existing job definitions/schedules in place
@@ -11,6 +12,7 @@ Functionality:
 ### POM Setup
 
 In your project POM, it's important to set 2 properties:
+
 1. The `ess.server.timezone` POM property (or `serverTimeZone` plugin/config) needs to match the time zone of the server you deploy to. This is due to observed quirks with deploying to ESS
 2. The `ess.config.package` POM property (or `configurationPackage` plugin/config) should be set to the Java/Groovy package that your expose your factories (see below)
 
@@ -74,6 +76,8 @@ class SimplyBetter implements JobDefinitionFactory, ScheduleFactory, JobRequestF
 }
 ```
 
+This example will automatically create a schedule in ESS that uses ESS' weekly schedule capability but adds the proper exclude dates for holidays (and includes alternate dates).
+
 ## FAQ
 
 ### Is there a way to create all this w/o the requests firing off?
@@ -88,13 +92,13 @@ The schedule and job definition will be updated in place. If the job request alr
 
 The way ESS seems to work is that there are 2 visible job requests for each "setup" you make. The parent one, which lasts the life of the schedule and then a child one that represents the next execution. Whenever you run this deployment with an existing job request, the next pending execution will be canceled and a new one will be created with the proper date for the updated schedule. The original parent will remain.
 
-### Are deletions supported?
+### Will the plugin delete old schedules/job requests?
 
-Not right now.
+Not right now. It only adds or updates.
 
 ### Purging
 
-You can force deletion of ALL ESS data by running with the property `ess.clean.everything.first` on the Maven command line.
+You can force deletion of ALL ESS data by running with the property `ess.clean.everything.first` on the Maven command line. This should only be used in a development environment.
 
 ## Limitations
 
@@ -104,6 +108,6 @@ Most projects will fall into this category. Because of the way the class loaders
 
 ## Changing the web service type
 
-If you change the web service type (e.g. from 2 way synchronous to 1 way), the job definition is supposed to be updated with the new job type but that does not appeat to hapepn. The job request also does not update. You'll need to manually delete the job requests (including the parent requests) and job definitions and then run again
+If you change the web service type (e.g. from 2 way synchronous to 1 way), the job definition is supposed to be updated with the new job type but that does not appear to happen. In addition, the job request is not updated with new request parameters (or the new job type). You'll need to manually (using EM) delete the job requests (including the parent requests) and job definitions and then run again.
 
 A TODO for the plugin is to detect if the job type is changing and if so: cancel exists requests, remove the job definition, then allow the job definition + requests to be recreated.
