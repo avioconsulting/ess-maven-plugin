@@ -1,6 +1,7 @@
 # ESS Maven Plugin
 
 Functionality:
+
 * Takes care of EJB interactions with ESS
 * Easy to write Groovy classes are used in your project POMs to declare schedules (when), job definitions (what), and job requests (ties together schedule + job definition)
 * Updates existing job definitions/schedules in place
@@ -11,6 +12,7 @@ Functionality:
 ### POM Setup
 
 In your project POM, it's important to set 2 properties:
+
 1. The `ess.server.timezone` POM property (or `serverTimeZone` plugin/config) needs to match the time zone of the server you deploy to. This is due to observed quirks with deploying to ESS
 2. The `ess.config.package` POM property (or `configurationPackage` plugin/config) should be set to the Java/Groovy package that your expose your factories (see below)
 
@@ -73,6 +75,8 @@ class SimplyBetter implements JobDefinitionFactory, ScheduleFactory, JobRequestF
   }
 }
 ```
+
+This example will automatically create a schedule in ESS that uses ESS' weekly schedule capability but adds the proper exclude dates for holidays (and includes alternate dates).
 
 ## FAQ
 
