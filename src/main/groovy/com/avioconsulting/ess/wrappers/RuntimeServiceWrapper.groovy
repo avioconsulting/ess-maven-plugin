@@ -1,4 +1,4 @@
-package com.avioconsulting.ess.deployment
+package com.avioconsulting.ess.wrappers
 
 import com.avioconsulting.ess.models.JobRequest
 import com.avioconsulting.ess.models.JobRequestMetadata

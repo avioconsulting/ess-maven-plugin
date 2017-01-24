@@ -1,7 +1,7 @@
 package com.avioconsulting.ess.mojos
 
-import com.avioconsulting.ess.deployment.MetadataServiceWrapper
-import com.avioconsulting.ess.deployment.RuntimeServiceWrapper
+import com.avioconsulting.ess.wrappers.MetadataServiceWrapper
+import com.avioconsulting.ess.wrappers.RuntimeServiceWrapper
 import com.avioconsulting.ess.factories.JobDefinitionFactory
 import com.avioconsulting.ess.factories.JobRequestFactory
 import com.avioconsulting.ess.factories.ScheduleFactory
