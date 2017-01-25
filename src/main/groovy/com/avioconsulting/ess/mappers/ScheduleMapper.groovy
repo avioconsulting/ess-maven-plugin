@@ -92,9 +92,9 @@ class ScheduleMapper {
     private Recurrence getRecurrence(RecurringSchedule ourSchedule) {
         def frequency = frequencyMapping[ourSchedule.frequency]
         def recurrence = new Recurrence(frequency,
-                       ourSchedule.repeatInterval,
-                       ourSchedule.startDate.toDate().toCalendar(),
-                       ourSchedule.endDate.toDate().toCalendar())
+                                        ourSchedule.repeatInterval,
+                                        ourSchedule.startDate.toDate().toCalendar(),
+                                        ourSchedule.endDate.toDate().toCalendar())
         def dateTime = new LocalDate().toDateTime(ourSchedule.timeOfDay, ourSchedule.timeZone)
         def dateTimeThisMachine = dateTime.toDateTime(this.thisMachineTimeZone)
         // ESS seems to assume the recurTime is in the time zone of the machine running this (not necessarily server)
