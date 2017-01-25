@@ -27,8 +27,8 @@ import org.reflections.util.ConfigurationBuilder
 
 import javax.naming.InitialContext
 
-@Mojo(name = 'deploy')
-class DeployMojo extends AbstractMojo {
+@Mojo(name = 'jobSchedule')
+class JobScheduleMojo extends AbstractMojo {
     private final int DELETE_RETRIES = 10
 
     @Parameter(property = 'weblogic.user', required = true)
