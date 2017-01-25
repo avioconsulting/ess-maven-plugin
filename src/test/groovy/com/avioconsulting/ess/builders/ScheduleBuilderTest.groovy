@@ -221,9 +221,29 @@ class ScheduleBuilderTest {
         // arrange
 
         // act
+        def schedule = ScheduleBuilder.getMonthlySchedule name: 'the_schedule',
+                                                          displayName: 'the schedule',
+                                                          description: 'Monthly schedule',
+                                                          startDate: new LocalDate(2017, 1, 1),
+                                                          include: WeekendDates.No,
+                                                          endDate: new LocalDate(2017, 2, 27),
+                                                          timeOfDay: new LocalTime(9, 15, 10),
+                                                          timeZone: DateTimeZone.forID('America/Denver'),
+                                                          // 7th is a saturday
+                                                          daysOfMonth: [7],
+                                                          holidays: [new LocalDate(2017, 1, 6)],
+                                                          alternateDirection: Direction.Backward
 
         // assert
-        fail 'write this'
+        assertThat schedule.includeDates.size(),
+                   is(equalTo(1))
+        // 6th is the alternate date for the weekend day but it's a holiday
+        assertThat schedule.includeDates[0],
+                   is(equalTo(new LocalDate(2017, 1, 5)))
+        assertThat schedule.excludeDates.size(),
+                   is(equalTo(1))
+        assertThat schedule.excludeDates[0],
+                   is(equalTo(new LocalDate(2017, 1, 7)))
     }
 
     @Test
