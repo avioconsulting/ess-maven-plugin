@@ -10,6 +10,8 @@ import org.joda.time.DateTimeZone
 import org.joda.time.LocalDate
 import org.joda.time.LocalTime
 
+import java.time.DayOfWeek
+
 class ScheduleMapper {
     private final DateTimeZone thisMachineTimeZone
     private final DateTimeZone serverTimeZone
@@ -28,14 +30,14 @@ class ScheduleMapper {
             (RecurringSchedule.Frequency.Weekly): RecurrenceFields.FREQUENCY.WEEKLY
     ]
 
-    private static final Map<RecurringSchedule.DayOfWeek, RecurrenceFields.DAY_OF_WEEK> dayOfWeekMapping = [
-            (RecurringSchedule.DayOfWeek.Monday)   : RecurrenceFields.DAY_OF_WEEK.MONDAY,
-            (RecurringSchedule.DayOfWeek.Tuesday)  : RecurrenceFields.DAY_OF_WEEK.TUESDAY,
-            (RecurringSchedule.DayOfWeek.Wednesday): RecurrenceFields.DAY_OF_WEEK.WEDNESDAY,
-            (RecurringSchedule.DayOfWeek.Thursday) : RecurrenceFields.DAY_OF_WEEK.THURSDAY,
-            (RecurringSchedule.DayOfWeek.Friday)   : RecurrenceFields.DAY_OF_WEEK.FRIDAY,
-            (RecurringSchedule.DayOfWeek.Saturday) : RecurrenceFields.DAY_OF_WEEK.SATURDAY,
-            (RecurringSchedule.DayOfWeek.Sunday)   : RecurrenceFields.DAY_OF_WEEK.SUNDAY
+    private static final Map<DayOfWeek, RecurrenceFields.DAY_OF_WEEK> dayOfWeekMapping = [
+            (DayOfWeek.MONDAY)   : RecurrenceFields.DAY_OF_WEEK.MONDAY,
+            (DayOfWeek.TUESDAY)  : RecurrenceFields.DAY_OF_WEEK.TUESDAY,
+            (DayOfWeek.WEDNESDAY): RecurrenceFields.DAY_OF_WEEK.WEDNESDAY,
+            (DayOfWeek.THURSDAY) : RecurrenceFields.DAY_OF_WEEK.THURSDAY,
+            (DayOfWeek.FRIDAY)   : RecurrenceFields.DAY_OF_WEEK.FRIDAY,
+            (DayOfWeek.SATURDAY) : RecurrenceFields.DAY_OF_WEEK.SATURDAY,
+            (DayOfWeek.SUNDAY)   : RecurrenceFields.DAY_OF_WEEK.SUNDAY
     ]
 
     private static RecurrenceFields.TIME_OF_DAY getTimeOfDay(LocalTime timeOfDay) {

@@ -63,7 +63,7 @@ class SimplyBetter implements JobDefinitionFactory, ScheduleFactory, JobRequestF
                                 endDate: new LocalDate(2017, 12, 31),
                                 timeOfDay: new LocalTime(9, 15, 10),
                                 timeZone: DateTimeZone.forID('America/Denver'),
-                                daysOfWeek: [RecurringSchedule.DayOfWeek.Monday],
+                                daysOfWeek: [DayOfWeek.Monday],
                                 holidays: holidays,
                                 alternateDirection: Direction.Backward
   }

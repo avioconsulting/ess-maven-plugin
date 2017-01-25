@@ -2,12 +2,14 @@ package com.avioconsulting.ess.builders
 
 import com.avioconsulting.ess.models.Direction
 import com.avioconsulting.ess.models.RecurringSchedule
-import com.avioconsulting.ess.models.RecurringSchedule.DayOfWeek
+
 import net.objectlab.kit.datecalc.common.DefaultHolidayCalendar
 import net.objectlab.kit.datecalc.common.HolidayCalendar
 import net.objectlab.kit.datecalc.joda.LocalDateCalculator
 import net.objectlab.kit.datecalc.joda.LocalDateKitCalculatorsFactory
 import org.joda.time.LocalDate
+
+import java.time.DayOfWeek
 
 class ScheduleBuilder {
     static private final String NO_HOLIDAY_CALENDAR = 'NO_HOLIDAY_CALENDAR'
@@ -72,7 +74,7 @@ class ScheduleBuilder {
      */
     private static Set<LocalDate> getJobExecutionDates(LocalDate beginningDate,
                                                        LocalDate endDate,
-                                                       List<RecurringSchedule.DayOfWeek> daysOfWeek) {
+                                                       List<DayOfWeek> daysOfWeek) {
         Set<LocalDate> list = []
         def currentDate = new LocalDate(beginningDate)
         while (currentDate <= endDate) {

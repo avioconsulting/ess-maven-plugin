@@ -7,6 +7,8 @@ import org.joda.time.LocalDate
 import org.joda.time.LocalTime
 import org.junit.Test
 
+import java.time.DayOfWeek
+
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertThat
@@ -14,7 +16,7 @@ import static org.junit.Assert.assertThat
 class ScheduleBuilderTest {
     def getJobExecutionDates(LocalDate beginningDate,
                              LocalDate endDate,
-                             List<RecurringSchedule.DayOfWeek> daysOfWeek) {
+                             List<DayOfWeek> daysOfWeek) {
         Set<LocalDate> result = ScheduleBuilder.getJobExecutionDates(beginningDate,
                                                                      endDate,
                                                                      daysOfWeek)
@@ -47,7 +49,7 @@ class ScheduleBuilderTest {
                                                    endDate: new LocalDate(2017, 2, 27),
                                                    timeOfDay: new LocalTime(9, 15, 10),
                                                    timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Monday],
+                                                   daysOfWeek: [DayOfWeek.MONDAY],
                                                    holidays: [new LocalDate(2017, 1, 30)],
                                                    alternateDirection: Direction.Backward
 
@@ -66,7 +68,7 @@ class ScheduleBuilderTest {
         assertThat schedule.description,
                    is(equalTo('Weekly schedule on mondays'))
         assertThat schedule.daysOfWeek,
-                   is(equalTo([RecurringSchedule.DayOfWeek.Monday]))
+                   is(equalTo([DayOfWeek.MONDAY]))
         assertThat schedule.frequency,
                    is(equalTo(RecurringSchedule.Frequency.Weekly))
         assertThat schedule.timeZone,
@@ -99,8 +101,8 @@ class ScheduleBuilderTest {
                                                    endDate: new LocalDate(2017, 2, 27),
                                                    timeOfDay: new LocalTime(9, 15, 10),
                                                    timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Monday,
-                                                                RecurringSchedule.DayOfWeek.Tuesday],
+                                                   daysOfWeek: [DayOfWeek.MONDAY,
+                                                                DayOfWeek.TUESDAY],
                                                    holidays: [new LocalDate(2017, 1, 30),
                                                               new LocalDate(2017, 1, 31)],
                                                    alternateDirection: Direction.Backward
@@ -133,8 +135,8 @@ class ScheduleBuilderTest {
                                                    endDate: new LocalDate(2017, 2, 27),
                                                    timeOfDay: new LocalTime(9, 15, 10),
                                                    timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Monday,
-                                                                RecurringSchedule.DayOfWeek.Tuesday],
+                                                   daysOfWeek: [DayOfWeek.MONDAY,
+                                                                DayOfWeek.TUESDAY],
                                                    holidays: [new LocalDate(2017, 1, 31)],
                                                    alternateDirection: Direction.Backward
 
@@ -162,7 +164,7 @@ class ScheduleBuilderTest {
                                                    endDate: new LocalDate(2017, 2, 27),
                                                    timeOfDay: new LocalTime(9, 15, 10),
                                                    timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Monday],
+                                                   daysOfWeek: [DayOfWeek.MONDAY],
                                                    holidays: [new LocalDate(2017, 1, 2), new LocalDate(2017, 1, 23)],
                                                    alternateDirection: Direction.Backward
 
@@ -195,13 +197,13 @@ class ScheduleBuilderTest {
                                                    endDate: new LocalDate(2017, 2, 27),
                                                    timeOfDay: new LocalTime(9, 15, 10),
                                                    timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Sunday],
+                                                   daysOfWeek: [DayOfWeek.SUNDAY],
                                                    holidays: [],
                                                    alternateDirection: Direction.Backward
 
         // assert
         assertThat schedule.daysOfWeek,
-                   is(equalTo([RecurringSchedule.DayOfWeek.Sunday]))
+                   is(equalTo([DayOfWeek.SUNDAY]))
         assertThat schedule.includeDates.size(),
                    is(equalTo(0))
         assertThat schedule.excludeDates.size(),
@@ -220,13 +222,13 @@ class ScheduleBuilderTest {
                                                    endDate: new LocalDate(2017, 2, 27),
                                                    timeOfDay: new LocalTime(9, 15, 10),
                                                    timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Monday],
+                                                   daysOfWeek: [DayOfWeek.MONDAY],
                                                    holidays: [],
                                                    alternateDirection: Direction.Backward
 
         // assert
         assertThat schedule.daysOfWeek,
-                   is(equalTo([RecurringSchedule.DayOfWeek.Monday]))
+                   is(equalTo([DayOfWeek.MONDAY]))
         assertThat schedule.includeDates.size(),
                    is(equalTo(0))
         assertThat schedule.excludeDates.size(),
@@ -241,7 +243,7 @@ class ScheduleBuilderTest {
         // act
         def result = getJobExecutionDates(beginningDate,
                                           new LocalDate(2017, 2, 27),
-                                          [RecurringSchedule.DayOfWeek.Monday])
+                                          [DayOfWeek.MONDAY])
 
         // assert
         assertThat result,
@@ -266,7 +268,7 @@ class ScheduleBuilderTest {
         // act
         def result = getJobExecutionDates(beginningDate,
                                           new LocalDate(2017, 2, 28),
-                                          [RecurringSchedule.DayOfWeek.Tuesday])
+                                          [DayOfWeek.TUESDAY])
 
         // assert
         assertThat result,
@@ -292,8 +294,8 @@ class ScheduleBuilderTest {
         def result = getJobExecutionDates(beginningDate,
                                           new LocalDate(2017, 2, 28),
                                           [
-                                                  RecurringSchedule.DayOfWeek.Monday,
-                                                  RecurringSchedule.DayOfWeek.Tuesday
+                                                  DayOfWeek.MONDAY,
+                                                  DayOfWeek.TUESDAY
                                           ])
 
         // assert
@@ -329,8 +331,8 @@ class ScheduleBuilderTest {
         def result = getJobExecutionDates(beginningDate,
                                           new LocalDate(2017, 2, 28),
                                           [
-                                                  RecurringSchedule.DayOfWeek.Tuesday,
-                                                  RecurringSchedule.DayOfWeek.Monday
+                                                  DayOfWeek.TUESDAY,
+                                                  DayOfWeek.MONDAY
                                           ])
 
         // assert
@@ -365,7 +367,7 @@ class ScheduleBuilderTest {
         // act
         def result = getJobExecutionDates(beginningDate,
                                           new LocalDate(2017, 1, 31),
-                                          [RecurringSchedule.DayOfWeek.Sunday])
+                                          [DayOfWeek.SUNDAY])
 
         // assert
         assertThat result,

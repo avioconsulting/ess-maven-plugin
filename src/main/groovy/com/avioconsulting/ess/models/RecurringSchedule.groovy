@@ -10,17 +10,8 @@ import org.joda.time.LocalTime
 @InheritConstructors
 class RecurringSchedule extends BaseModel {
     enum Frequency {
-        Weekly
-    }
-
-    enum DayOfWeek {
-        Monday,
-        Tuesday,
-        Wednesday,
-        Thursday,
-        Friday,
-        Saturday,
-        Sunday
+        Weekly,
+        Monthly
     }
 
     String name, description, displayName
@@ -29,7 +20,6 @@ class RecurringSchedule extends BaseModel {
 
     int recurrenceCount, repeatInterval
     LocalDate startDate, endDate
-    List<DayOfWeek> daysOfWeek
     LocalTime timeOfDay
     Set<LocalDate> includeDates, excludeDates
 

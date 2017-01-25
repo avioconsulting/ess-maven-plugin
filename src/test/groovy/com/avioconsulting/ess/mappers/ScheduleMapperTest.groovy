@@ -9,6 +9,8 @@ import org.joda.time.LocalDate
 import org.joda.time.LocalTime
 import org.junit.Test
 
+import java.time.DayOfWeek
+
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
@@ -32,7 +34,7 @@ class ScheduleMapperTest {
     @Test
     void dayOfWeekMapped() {
         // arrange
-        def enumValues = RecurringSchedule.DayOfWeek.values()
+        def enumValues = DayOfWeek.values()
 
         enumValues.each { type ->
             // act
@@ -65,8 +67,8 @@ class ScheduleMapperTest {
                 startDate: new LocalDate(2017, 1, 1),
                 endDate: new LocalDate(2017, 2, 1),
                 repeatInterval: 1,
-                daysOfWeek: [RecurringSchedule.DayOfWeek.Monday,
-                             RecurringSchedule.DayOfWeek.Tuesday],
+                daysOfWeek: [DayOfWeek.MONDAY,
+                             DayOfWeek.TUESDAY],
                 timeOfDay: new LocalTime(9, 15, 10),
                 includeDates: [new LocalDate(2017, 1, 15), new LocalDate(2017, 1, 16)],
                 excludeDates: [new LocalDate(2017, 1, 17), new LocalDate(2017, 1, 18)])
@@ -103,8 +105,8 @@ class ScheduleMapperTest {
                 startDate: new LocalDate(2017, 1, 1),
                 endDate: new LocalDate(2017, 2, 1),
                 repeatInterval: 1,
-                daysOfWeek: [RecurringSchedule.DayOfWeek.Monday,
-                             RecurringSchedule.DayOfWeek.Tuesday],
+                daysOfWeek: [DayOfWeek.MONDAY,
+                             DayOfWeek.TUESDAY],
                 timeOfDay: new LocalTime(9, 15, 10),
                 includeDates: [new LocalDate(2017, 1, 15), new LocalDate(2017, 1, 16)],
                 excludeDates: [new LocalDate(2017, 1, 17), new LocalDate(2017, 1, 18)])
@@ -141,8 +143,8 @@ class ScheduleMapperTest {
                 startDate: new LocalDate(2017, 1, 1),
                 endDate: new LocalDate(2017, 2, 1),
                 repeatInterval: 1,
-                daysOfWeek: [RecurringSchedule.DayOfWeek.Monday,
-                             RecurringSchedule.DayOfWeek.Tuesday],
+                daysOfWeek: [DayOfWeek.MONDAY,
+                             DayOfWeek.TUESDAY],
                 timeOfDay: new LocalTime(9, 15, 10),
                 includeDates: [new LocalDate(2017, 1, 15), new LocalDate(2017, 1, 16)],
                 excludeDates: [new LocalDate(2017, 1, 17), new LocalDate(2017, 1, 18)])
@@ -179,8 +181,8 @@ class ScheduleMapperTest {
                 startDate: new LocalDate(2017, 1, 1),
                 endDate: new LocalDate(2017, 2, 1),
                 repeatInterval: 1,
-                daysOfWeek: [RecurringSchedule.DayOfWeek.Monday,
-                             RecurringSchedule.DayOfWeek.Tuesday],
+                daysOfWeek: [DayOfWeek.MONDAY,
+                             DayOfWeek.TUESDAY],
                 timeOfDay: new LocalTime(9, 15, 10),
                 includeDates: [new LocalDate(2017, 1, 15), new LocalDate(2017, 1, 16)],
                 excludeDates: [new LocalDate(2017, 1, 17), new LocalDate(2017, 1, 18)])
