@@ -5,5 +5,10 @@ import groovy.transform.InheritConstructors
 
 @Canonical
 @InheritConstructors
-class MonthlySchedule {
+class MonthlySchedule extends RecurringSchedule {
+    List<Integer> daysOfMonth
+
+    Frequency getFrequency() {
+        Frequency.Monthly
+    }
 }

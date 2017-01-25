@@ -11,6 +11,6 @@ class WeeklySchedule extends RecurringSchedule {
     List<DayOfWeek> daysOfWeek
 
     Frequency getFrequency() {
-        return Frequency.Weekly
+        Frequency.Weekly
     }
 }
