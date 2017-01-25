@@ -31,6 +31,7 @@ import org.joda.time.DateTimeZone
 import org.joda.time.LocalDate
 import org.joda.time.LocalTime
 import com.avioconsulting.ess.builders.*
+import java.time.DayOfWeek
 
 class SimplyBetter implements JobDefinitionFactory, ScheduleFactory, JobRequestFactory {
   JobDefinition createJobDefinition() {
@@ -63,7 +64,7 @@ class SimplyBetter implements JobDefinitionFactory, ScheduleFactory, JobRequestF
                                       endDate: new LocalDate(2017, 12, 31),
                                       timeOfDay: new LocalTime(9, 15, 10),
                                       timeZone: DateTimeZone.forID('America/Denver'),
-                                      daysOfWeek: [DayOfWeek.Monday],
+                                      daysOfWeek: [DayOfWeek.MONDAY],
                                       holidays: holidays,
                                       alternateDirection: Direction.Backward
   }
@@ -117,7 +118,7 @@ class SimplyBetter implements JobDefinitionFactory, ScheduleFactory, JobRequestF
 
     ScheduleBuilder.getMonthlySchedule name: 'SimplyBetter',
                                        displayName: 'the schedule',
-                                       description: 'Weekly schedule on mondays',
+                                       description: 'a monthly schedule',
                                        startDate: new LocalDate(2017, 1, 1),
                                        endDate: new LocalDate(2017, 12, 31),
                                        timeOfDay: new LocalTime(9, 15, 10),
