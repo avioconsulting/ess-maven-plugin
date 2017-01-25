@@ -49,7 +49,7 @@ class ScheduleBuilderTest {
     }
 
     @Test
-    void getSchedule() {
+    void getWeeklySchedule() {
         // arrange
 
         // act
@@ -101,7 +101,7 @@ class ScheduleBuilderTest {
     }
 
     @Test
-    void getSchedule_2ConsecutiveDays() {
+    void getWeeklySchedule_2ConsecutiveDays() {
         // arrange
 
         // act
@@ -135,7 +135,7 @@ class ScheduleBuilderTest {
     }
 
     @Test
-    void getSchedule_InclusionDateIsRegularlyScheduledDate() {
+    void getWeeklySchedule_InclusionDateIsRegularlyScheduledDate() {
         // arrange
 
         // act
@@ -164,7 +164,7 @@ class ScheduleBuilderTest {
     }
 
     @Test
-    void getSchedule_InclusionBeforeStart() {
+    void getWeeklySchedule_InclusionBeforeStart() {
         // arrange
 
         // act
@@ -198,7 +198,7 @@ class ScheduleBuilderTest {
     }
 
     @Test
-    void getSchedule_Weekend() {
+    void getWeeklySchedule_Weekend() {
         // arrange
 
         // act
@@ -223,7 +223,7 @@ class ScheduleBuilderTest {
     }
 
     @Test
-    void getSchedule_NoHolidays() {
+    void getWeeklySchedule_NoHolidays() {
         // arrange
 
         // act
