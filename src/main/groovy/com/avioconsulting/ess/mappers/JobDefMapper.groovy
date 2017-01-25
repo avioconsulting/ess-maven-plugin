@@ -12,6 +12,12 @@ class JobDefMapper {
             (com.avioconsulting.ess.models.JobDefinition.Types.OneWayWebService): 'OnewayWebserviceJobType'
     ]
 
+    public static
+    final Map<String, com.avioconsulting.ess.models.JobDefinition.Types> reverseTypeMapping = typeMapping.collectEntries {
+        ourType, theirType ->
+            [(theirType): ourType]
+    }
+
     static JobDefinition getOracleJobDef(URL soaUrl,
                                          String hostingApp,
                                          com.avioconsulting.ess.models.JobDefinition jobDefinition) {
