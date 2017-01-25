@@ -35,7 +35,19 @@ class ScheduleBuilder {
      * @param alternateDirection
      * @return
      */
-    static WeeklySchedule getWeeklySchedule(map) {
+    static WeeklySchedule getWeeklySchedule(Map map) {
+        validateKeys map, [
+                'daysOfWeek',
+                'startDate',
+                'endDate',
+                'holidays',
+                'alternateDirection',
+                'name',
+                'description',
+                'displayName',
+                'timeZone',
+                'timeOfDay'
+        ]
         List<DayOfWeek> daysOfWeek = map.daysOfWeek
         LocalDate startDate = map.startDate
         LocalDate endDate = map.endDate
@@ -61,6 +73,13 @@ class ScheduleBuilder {
                            excludeDates: excludeDates)
     }
 
+    private static validateKeys(Map map, List requiredKeys) {
+        def missing = requiredKeys - map.keySet()
+        if (missing.any()) {
+            throw new Exception("Required parameters missing! ${missing}")
+        }
+    }
+
     private static List getIncludeExcludeDates(Set<LocalDate> holidays,
                                                Direction alternateDirection,
                                                Set<LocalDate> jobDates,
@@ -84,7 +103,20 @@ class ScheduleBuilder {
         }
     }
 
-    static MonthlySchedule getMonthlySchedule(map) {
+    static MonthlySchedule getMonthlySchedule(Map map) {
+        validateKeys map, [
+                'daysOfMonth',
+                'include',
+                'startDate',
+                'endDate',
+                'holidays',
+                'alternateDirection',
+                'name',
+                'description',
+                'displayName',
+                'timeZone',
+                'timeOfDay'
+        ]
         List<Integer> daysOfMonth = map.daysOfMonth
         LocalDate startDate = map.startDate
         LocalDate endDate = map.endDate
