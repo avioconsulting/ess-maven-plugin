@@ -1,10 +1,12 @@
 package com.avioconsulting.ess.mojos
 
-import com.avioconsulting.ess.wrappers.MetadataServiceWrapper
-import com.avioconsulting.ess.wrappers.RuntimeServiceWrapper
 import com.avioconsulting.ess.factories.JobDefinitionFactory
 import com.avioconsulting.ess.factories.JobRequestFactory
 import com.avioconsulting.ess.factories.ScheduleFactory
+import com.avioconsulting.ess.models.MonthlySchedule
+import com.avioconsulting.ess.models.WeeklySchedule
+import com.avioconsulting.ess.wrappers.MetadataServiceWrapper
+import com.avioconsulting.ess.wrappers.RuntimeServiceWrapper
 import oracle.as.scheduler.MetadataService
 import oracle.as.scheduler.MetadataServiceHandle
 import oracle.as.scheduler.RuntimeService
@@ -99,11 +101,22 @@ class DeployMojo extends AbstractMojo {
                     def scheduleFactory = klass.newInstance()
                     def schedule = scheduleFactory.createSchedule()
                     this.log.info "Schedule details for: ${schedule.name}"
-                    this.log.info "--- Display name: ${schedule.displayName}"
-                    this.log.info "--- Time of day: ${schedule.timeOfDay}"
-                    this.log.info "--- Days of week: ${schedule.daysOfWeek}"
-                    this.log.info "--- Start date: ${schedule.startDate}"
-                    this.log.info "--- End date: ${schedule.endDate}"
+                    this.log.info "--- Display name : ${schedule.displayName}"
+                    this.log.info "--- Time of day  : ${schedule.timeOfDay}"
+                    this.log.info "--- Frequency    : ${schedule.frequency}"
+                    switch (schedule) {
+                        case WeeklySchedule:
+                            this.log.info "--- Days of week : ${schedule.daysOfWeek}"
+                            break
+                        case MonthlySchedule:
+                            this.log.info "--- Days of month: ${schedule.daysOfMonth}"
+                            break
+                        default:
+                            throw new Exception(
+                                    "Unknown schedule type ${schedule.getClass()}! A developer did not do their job!")
+                    }
+                    this.log.info "--- Start date   : ${schedule.startDate}"
+                    this.log.info "--- End date     : ${schedule.endDate}"
                     this.log.info "--- Exclude dates: ${schedule.excludeDates}"
                     this.log.info "--- Include dates: ${schedule.includeDates}"
                     if (existingSchedules.contains(schedule.name)) {
