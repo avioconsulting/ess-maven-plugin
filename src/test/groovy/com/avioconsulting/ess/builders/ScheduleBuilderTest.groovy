@@ -42,16 +42,16 @@ class ScheduleBuilderTest {
         // arrange
 
         // act
-        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
-                                                   displayName: 'the schedule',
-                                                   description: 'Weekly schedule on mondays',
-                                                   startDate: new LocalDate(2017, 1, 1),
-                                                   endDate: new LocalDate(2017, 2, 27),
-                                                   timeOfDay: new LocalTime(9, 15, 10),
-                                                   timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [DayOfWeek.MONDAY],
-                                                   holidays: [new LocalDate(2017, 1, 30)],
-                                                   alternateDirection: Direction.Backward
+        def schedule = ScheduleBuilder.getWeeklySchedule name: 'the_schedule',
+                                                         displayName: 'the schedule',
+                                                         description: 'Weekly schedule on mondays',
+                                                         startDate: new LocalDate(2017, 1, 1),
+                                                         endDate: new LocalDate(2017, 2, 27),
+                                                         timeOfDay: new LocalTime(9, 15, 10),
+                                                         timeZone: DateTimeZone.forID('America/Denver'),
+                                                         daysOfWeek: [DayOfWeek.MONDAY],
+                                                         holidays: [new LocalDate(2017, 1, 30)],
+                                                         alternateDirection: Direction.Backward
 
         // assert
         // not using count to limit
@@ -94,18 +94,18 @@ class ScheduleBuilderTest {
         // arrange
 
         // act
-        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
-                                                   displayName: 'the schedule',
-                                                   description: 'Weekly schedule',
-                                                   startDate: new LocalDate(2017, 1, 1),
-                                                   endDate: new LocalDate(2017, 2, 27),
-                                                   timeOfDay: new LocalTime(9, 15, 10),
-                                                   timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [DayOfWeek.MONDAY,
+        def schedule = ScheduleBuilder.getWeeklySchedule name: 'the_schedule',
+                                                         displayName: 'the schedule',
+                                                         description: 'Weekly schedule',
+                                                         startDate: new LocalDate(2017, 1, 1),
+                                                         endDate: new LocalDate(2017, 2, 27),
+                                                         timeOfDay: new LocalTime(9, 15, 10),
+                                                         timeZone: DateTimeZone.forID('America/Denver'),
+                                                         daysOfWeek: [DayOfWeek.MONDAY,
                                                                 DayOfWeek.TUESDAY],
-                                                   holidays: [new LocalDate(2017, 1, 30),
+                                                         holidays: [new LocalDate(2017, 1, 30),
                                                               new LocalDate(2017, 1, 31)],
-                                                   alternateDirection: Direction.Backward
+                                                         alternateDirection: Direction.Backward
 
         // assert
         assertThat schedule.recurrenceCount,
@@ -128,17 +128,17 @@ class ScheduleBuilderTest {
         // arrange
 
         // act
-        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
-                                                   displayName: 'the schedule',
-                                                   description: 'Weekly schedule',
-                                                   startDate: new LocalDate(2017, 1, 1),
-                                                   endDate: new LocalDate(2017, 2, 27),
-                                                   timeOfDay: new LocalTime(9, 15, 10),
-                                                   timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [DayOfWeek.MONDAY,
+        def schedule = ScheduleBuilder.getWeeklySchedule name: 'the_schedule',
+                                                         displayName: 'the schedule',
+                                                         description: 'Weekly schedule',
+                                                         startDate: new LocalDate(2017, 1, 1),
+                                                         endDate: new LocalDate(2017, 2, 27),
+                                                         timeOfDay: new LocalTime(9, 15, 10),
+                                                         timeZone: DateTimeZone.forID('America/Denver'),
+                                                         daysOfWeek: [DayOfWeek.MONDAY,
                                                                 DayOfWeek.TUESDAY],
-                                                   holidays: [new LocalDate(2017, 1, 31)],
-                                                   alternateDirection: Direction.Backward
+                                                         holidays: [new LocalDate(2017, 1, 31)],
+                                                         alternateDirection: Direction.Backward
 
         // assert
         assertThat schedule.recurrenceCount,
@@ -157,16 +157,16 @@ class ScheduleBuilderTest {
         // arrange
 
         // act
-        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
-                                                   displayName: 'the schedule',
-                                                   description: 'Weekly schedule',
-                                                   startDate: new LocalDate(2017, 1, 1),
-                                                   endDate: new LocalDate(2017, 2, 27),
-                                                   timeOfDay: new LocalTime(9, 15, 10),
-                                                   timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [DayOfWeek.MONDAY],
-                                                   holidays: [new LocalDate(2017, 1, 2), new LocalDate(2017, 1, 23)],
-                                                   alternateDirection: Direction.Backward
+        def schedule = ScheduleBuilder.getWeeklySchedule name: 'the_schedule',
+                                                         displayName: 'the schedule',
+                                                         description: 'Weekly schedule',
+                                                         startDate: new LocalDate(2017, 1, 1),
+                                                         endDate: new LocalDate(2017, 2, 27),
+                                                         timeOfDay: new LocalTime(9, 15, 10),
+                                                         timeZone: DateTimeZone.forID('America/Denver'),
+                                                         daysOfWeek: [DayOfWeek.MONDAY],
+                                                         holidays: [new LocalDate(2017, 1, 2), new LocalDate(2017, 1, 23)],
+                                                         alternateDirection: Direction.Backward
 
         // assert
         assertThat schedule.recurrenceCount,
@@ -190,16 +190,16 @@ class ScheduleBuilderTest {
         // arrange
 
         // act
-        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
-                                                   displayName: 'the schedule',
-                                                   description: 'Weekly schedule on mondays',
-                                                   startDate: new LocalDate(2017, 1, 1),
-                                                   endDate: new LocalDate(2017, 2, 27),
-                                                   timeOfDay: new LocalTime(9, 15, 10),
-                                                   timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [DayOfWeek.SUNDAY],
-                                                   holidays: [],
-                                                   alternateDirection: Direction.Backward
+        def schedule = ScheduleBuilder.getWeeklySchedule name: 'the_schedule',
+                                                         displayName: 'the schedule',
+                                                         description: 'Weekly schedule on mondays',
+                                                         startDate: new LocalDate(2017, 1, 1),
+                                                         endDate: new LocalDate(2017, 2, 27),
+                                                         timeOfDay: new LocalTime(9, 15, 10),
+                                                         timeZone: DateTimeZone.forID('America/Denver'),
+                                                         daysOfWeek: [DayOfWeek.SUNDAY],
+                                                         holidays: [],
+                                                         alternateDirection: Direction.Backward
 
         // assert
         assertThat schedule.daysOfWeek,
@@ -215,16 +215,16 @@ class ScheduleBuilderTest {
         // arrange
 
         // act
-        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
-                                                   displayName: 'the schedule',
-                                                   description: 'Weekly schedule on mondays',
-                                                   startDate: new LocalDate(2017, 1, 1),
-                                                   endDate: new LocalDate(2017, 2, 27),
-                                                   timeOfDay: new LocalTime(9, 15, 10),
-                                                   timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [DayOfWeek.MONDAY],
-                                                   holidays: [],
-                                                   alternateDirection: Direction.Backward
+        def schedule = ScheduleBuilder.getWeeklySchedule name: 'the_schedule',
+                                                         displayName: 'the schedule',
+                                                         description: 'Weekly schedule on mondays',
+                                                         startDate: new LocalDate(2017, 1, 1),
+                                                         endDate: new LocalDate(2017, 2, 27),
+                                                         timeOfDay: new LocalTime(9, 15, 10),
+                                                         timeZone: DateTimeZone.forID('America/Denver'),
+                                                         daysOfWeek: [DayOfWeek.MONDAY],
+                                                         holidays: [],
+                                                         alternateDirection: Direction.Backward
 
         // assert
         assertThat schedule.daysOfWeek,

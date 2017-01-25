@@ -35,7 +35,7 @@ class ScheduleBuilder {
      * @param alternateDirection
      * @return
      */
-    static RecurringSchedule getSchedule(map) {
+    static RecurringSchedule getWeeklySchedule(map) {
         def daysOfWeek = map.daysOfWeek
         LocalDate startDate = map.startDate
         def jobDates = getJobExecutionDates(startDate,

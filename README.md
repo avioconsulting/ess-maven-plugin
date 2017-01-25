@@ -56,16 +56,16 @@ class SimplyBetter implements JobDefinitionFactory, ScheduleFactory, JobRequestF
       '2017-12-25'
     ].collect { dateStr -> new LocalDate(dateStr) }
 
-    ScheduleBuilder.getSchedule name: 'SimplyBetter',
-                                displayName: 'the schedule',
-                                description: 'Weekly schedule on mondays',
-                                startDate: new LocalDate(2017, 1, 1),
-                                endDate: new LocalDate(2017, 12, 31),
-                                timeOfDay: new LocalTime(9, 15, 10),
-                                timeZone: DateTimeZone.forID('America/Denver'),
-                                daysOfWeek: [DayOfWeek.Monday],
-                                holidays: holidays,
-                                alternateDirection: Direction.Backward
+    ScheduleBuilder.getWeeklySchedule name: 'SimplyBetter',
+                                      displayName: 'the schedule',
+                                      description: 'Weekly schedule on mondays',
+                                      startDate: new LocalDate(2017, 1, 1),
+                                      endDate: new LocalDate(2017, 12, 31),
+                                      timeOfDay: new LocalTime(9, 15, 10),
+                                      timeZone: DateTimeZone.forID('America/Denver'),
+                                      daysOfWeek: [DayOfWeek.Monday],
+                                      holidays: holidays,
+                                      alternateDirection: Direction.Backward
   }
 
   JobRequest createJobRequest() {
