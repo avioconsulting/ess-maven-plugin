@@ -101,6 +101,58 @@ class ScheduleBuilderTest {
     }
 
     @Test
+    void getMonthlySchedule() {
+        // arrange
+
+        // act
+        def schedule = ScheduleBuilder.getMonthlySchedule name: 'the_schedule',
+                                                          displayName: 'the schedule',
+                                                          description: 'Monthly schedule',
+                                                          startDate: new LocalDate(2017, 1, 1),
+                                                          endDate: new LocalDate(2017, 2, 27),
+                                                          timeOfDay: new LocalTime(9, 15, 10),
+                                                          timeZone: DateTimeZone.forID('America/Denver'),
+                                                          daysOfMonth: [1, 30],
+                                                          holidays: [new LocalDate(2017, 1, 30)],
+                                                          alternateDirection: Direction.Backward
+
+        // assert
+        // not using count to limit
+        assertThat schedule.recurrenceCount,
+                   is(equalTo(0))
+        assertThat schedule.startDate,
+                   is(equalTo(new LocalDate(2017, 1, 1)))
+        assertThat schedule.endDate,
+                   is(equalTo(new LocalDate(2017, 2, 27)))
+        assertThat schedule.name,
+                   is(equalTo('the_schedule'))
+        assertThat schedule.displayName,
+                   is(equalTo('the schedule'))
+        assertThat schedule.description,
+                   is(equalTo('Monthly schedule'))
+        assertThat schedule.daysOfMonth,
+                   is(equalTo([1, 30]))
+        assertThat schedule.frequency,
+                   is(equalTo(RecurringSchedule.Frequency.Monthly))
+        assertThat schedule.timeZone,
+                   is(equalTo(DateTimeZone.forID('America/Denver')))
+        // only supporting every 1 week right now
+        assertThat schedule.repeatInterval,
+                   is(equalTo(1))
+        assertThat schedule.timeOfDay,
+                   is(equalTo(new LocalTime(9, 15, 10)))
+        assertThat schedule.includeDates.size(),
+                   is(equalTo(1))
+        // friday before the 30th since 30th is a holiday
+        assertThat schedule.includeDates[0],
+                   is(equalTo(new LocalDate(2017, 1, 27)))
+        assertThat schedule.excludeDates.size(),
+                   is(equalTo(1))
+        assertThat schedule.excludeDates[0],
+                   is(equalTo(new LocalDate(2017, 1, 30)))
+    }
+
+    @Test
     void getWeeklySchedule_2ConsecutiveDays() {
         // arrange
 
