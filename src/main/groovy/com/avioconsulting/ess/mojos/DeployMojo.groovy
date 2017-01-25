@@ -102,20 +102,7 @@ class DeployMojo extends AbstractMojo {
                 }
             }
 
-            // need 2 transactions for cancel/delete job type changes
-
-            deployerWithRetries { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
-                canceledJobDefs.each { jobDef ->
-                    runtimeWrapper.deleteRequestsFor(jobDef)
-                }
-            }
-
-            withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
-                canceledJobDefs.each { jobDef ->
-                    metadataWrapper.deleteDefinition(jobDef)
-                }
-            }
-
+            cancelAndDeleteRequests(canceledJobDefs)
             newJobDefs.addAll(canceledJobDefs)
 
             withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
@@ -163,6 +150,21 @@ class DeployMojo extends AbstractMojo {
                         runtimeWrapper.createRequest(jobRequest)
                     }
                 }
+            }
+        }
+    }
+
+    private void cancelAndDeleteRequests(List<JobDefinition> canceledJobDefs) {
+        // need 2 transactions for cancel/delete job type changes
+        deployerWithRetries { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
+            canceledJobDefs.each { jobDef ->
+                runtimeWrapper.deleteRequestsFor(jobDef)
+            }
+        }
+
+        withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
+            canceledJobDefs.each { jobDef ->
+                metadataWrapper.deleteDefinition(jobDef)
             }
         }
     }
