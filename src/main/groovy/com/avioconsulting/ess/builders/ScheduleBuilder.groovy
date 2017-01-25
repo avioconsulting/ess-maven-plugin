@@ -85,6 +85,20 @@ class ScheduleBuilder {
         list
     }
 
+    private static Set<LocalDate> getMonthlyJobExecutionDates(LocalDate beginningDate,
+                                                              LocalDate endDate,
+                                                              List<Integer> daysOfMonth) {
+        Set<LocalDate> list = []
+        def currentDate = new LocalDate(beginningDate)
+        while (currentDate <= endDate) {
+            if (daysOfMonth.contains(currentDate.dayOfMonth)) {
+                list << currentDate
+            }
+            currentDate = currentDate.plusDays(1)
+        }
+        list
+    }
+
 
     private static DayOfWeek getDayOfWeek(LocalDate date) {
         int day = date.dayOfWeek

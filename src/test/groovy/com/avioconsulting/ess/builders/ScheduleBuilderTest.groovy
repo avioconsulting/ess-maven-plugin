@@ -25,6 +25,17 @@ class ScheduleBuilderTest {
         }
     }
 
+    def getMonthlyJobExecutionDates(LocalDate beginningDate,
+                                    LocalDate endDate,
+                                    List<Integer> daysOfMonth) {
+        Set<LocalDate> result = ScheduleBuilder.getMonthlyJobExecutionDates(beginningDate,
+                                                                            endDate,
+                                                                            daysOfMonth)
+        result.collect { date ->
+            date.toString()
+        }
+    }
+
     def getAlternateDates(List<LocalDate> daysOnHolidays,
                           Direction direction,
                           List<LocalDate> holidays) {
@@ -102,9 +113,9 @@ class ScheduleBuilderTest {
                                                          timeOfDay: new LocalTime(9, 15, 10),
                                                          timeZone: DateTimeZone.forID('America/Denver'),
                                                          daysOfWeek: [DayOfWeek.MONDAY,
-                                                                DayOfWeek.TUESDAY],
+                                                                      DayOfWeek.TUESDAY],
                                                          holidays: [new LocalDate(2017, 1, 30),
-                                                              new LocalDate(2017, 1, 31)],
+                                                                    new LocalDate(2017, 1, 31)],
                                                          alternateDirection: Direction.Backward
 
         // assert
@@ -136,7 +147,7 @@ class ScheduleBuilderTest {
                                                          timeOfDay: new LocalTime(9, 15, 10),
                                                          timeZone: DateTimeZone.forID('America/Denver'),
                                                          daysOfWeek: [DayOfWeek.MONDAY,
-                                                                DayOfWeek.TUESDAY],
+                                                                      DayOfWeek.TUESDAY],
                                                          holidays: [new LocalDate(2017, 1, 31)],
                                                          alternateDirection: Direction.Backward
 
@@ -165,7 +176,8 @@ class ScheduleBuilderTest {
                                                          timeOfDay: new LocalTime(9, 15, 10),
                                                          timeZone: DateTimeZone.forID('America/Denver'),
                                                          daysOfWeek: [DayOfWeek.MONDAY],
-                                                         holidays: [new LocalDate(2017, 1, 2), new LocalDate(2017, 1, 23)],
+                                                         holidays: [new LocalDate(2017, 1, 2), new LocalDate(2017, 1,
+                                                                                                             23)],
                                                          alternateDirection: Direction.Backward
 
         // assert
@@ -378,6 +390,38 @@ class ScheduleBuilderTest {
                            '2017-01-22',
                            '2017-01-29'
                    ]))
+    }
+
+    @Test
+    void getMonthlyJobExecutionDates() {
+        // arrange
+        def beginningDate = new LocalDate(2017, 1, 1)
+
+        // act
+        def result = getMonthlyJobExecutionDates(beginningDate,
+                                                 new LocalDate(2017, 3, 31),
+                                                 [1, 10])
+
+        // assert
+        assertThat result,
+                   is(equalTo([
+                           '2017-01-01',
+                           '2017-01-10',
+                           '2017-02-01',
+                           '2017-02-10',
+                           '2017-03-01',
+                           '2017-03-10',
+                   ]))
+    }
+
+    @Test
+    void getMonthlyJobExecutionDates_ExceedsMonthEnd() {
+        // arrange
+
+        // act
+
+        // assert
+        fail 'write this'
     }
 
     @Test
