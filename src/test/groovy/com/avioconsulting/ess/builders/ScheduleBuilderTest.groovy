@@ -101,7 +101,7 @@ class ScheduleBuilderTest {
     }
 
     @Test
-    void getMonthlySchedule() {
+    void getMonthlySchedule_WeekendsIncluded() {
         // arrange
 
         // act
@@ -109,6 +109,7 @@ class ScheduleBuilderTest {
                                                           displayName: 'the schedule',
                                                           description: 'Monthly schedule',
                                                           startDate: new LocalDate(2017, 1, 1),
+                                                          include: WeekendDates.Yes,
                                                           endDate: new LocalDate(2017, 2, 27),
                                                           timeOfDay: new LocalTime(9, 15, 10),
                                                           timeZone: DateTimeZone.forID('America/Denver'),
@@ -150,6 +151,79 @@ class ScheduleBuilderTest {
                    is(equalTo(1))
         assertThat schedule.excludeDates[0],
                    is(equalTo(new LocalDate(2017, 1, 30)))
+    }
+
+    @Test
+    void getMonthlySchedule_WeekendsNotIncluded() {
+        // arrange
+
+        // act
+        def schedule = ScheduleBuilder.getMonthlySchedule name: 'the_schedule',
+                                                          displayName: 'the schedule',
+                                                          description: 'Monthly schedule',
+                                                          startDate: new LocalDate(2017, 1, 1),
+                                                          include: WeekendDates.No,
+                                                          endDate: new LocalDate(2017, 2, 27),
+                                                          timeOfDay: new LocalTime(9, 15, 10),
+                                                          timeZone: DateTimeZone.forID('America/Denver'),
+                                                          // 7th is a saturday, 1st is a sunday
+                                                          daysOfMonth: [1, 7, 30],
+                                                          holidays: [new LocalDate(2017, 1, 30)],
+                                                          alternateDirection: Direction.Backward
+
+        // assert
+        // not using count to limit
+        assertThat schedule.recurrenceCount,
+                   is(equalTo(0))
+        assertThat schedule.startDate,
+                   is(equalTo(new LocalDate(2017, 1, 1)))
+        assertThat schedule.endDate,
+                   is(equalTo(new LocalDate(2017, 2, 27)))
+        assertThat schedule.name,
+                   is(equalTo('the_schedule'))
+        assertThat schedule.displayName,
+                   is(equalTo('the schedule'))
+        assertThat schedule.description,
+                   is(equalTo('Monthly schedule'))
+        assertThat schedule.daysOfMonth,
+                   is(equalTo([1, 7, 30]))
+        assertThat schedule.frequency,
+                   is(equalTo(RecurringSchedule.Frequency.Monthly))
+        assertThat schedule.timeZone,
+                   is(equalTo(DateTimeZone.forID('America/Denver')))
+        // only supporting every 1 week right now
+        assertThat schedule.repeatInterval,
+                   is(equalTo(1))
+        assertThat schedule.timeOfDay,
+                   is(equalTo(new LocalTime(9, 15, 10)))
+        assertThat schedule.includeDates.size(),
+                   is(equalTo(2))
+        // 6th is the substitute day for the 7th
+        assertThat schedule.includeDates[0],
+                   is(equalTo(new LocalDate(2017, 1, 6)))
+        // friday before the 30th since 30th is a holiday
+        assertThat schedule.includeDates[1],
+                   is(equalTo(new LocalDate(2017, 1, 27)))
+        assertThat schedule.excludeDates.size(),
+                   is(equalTo(3))
+        // 1st is a sunday
+        assertThat schedule.excludeDates[0],
+                   is(equalTo(new LocalDate(2017, 1, 1)))
+        // 7th is a saturday
+        assertThat schedule.excludeDates[1],
+                   is(equalTo(new LocalDate(2017, 1, 7)))
+        assertThat schedule.excludeDates[2],
+                   is(equalTo(new LocalDate(2017, 1, 30)))
+    }
+
+    @Test
+    void getMonthlySchedule_WeekendsNotIncluded_AlternateIsHoliday() {
+        // arrange
+
+        // act
+
+        // assert
+        fail 'write this'
     }
 
     @Test

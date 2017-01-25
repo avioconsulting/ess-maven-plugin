@@ -44,10 +44,10 @@ class ScheduleBuilder {
                                             daysOfWeek)
         Set<LocalDate> holidays = map.holidays
         Direction alternateDirection = map.alternateDirection
-        def (Set<LocalDate> includeDates, Collection<LocalDate> excludeDates) = getIncludeExcludeDates(holidays,
-                                                                                                       alternateDirection,
-                                                                                                       jobDates,
-                                                                                                       startDate)
+        def (Set<LocalDate> includeDates, Set<LocalDate> excludeDates) = getIncludeExcludeDates(holidays,
+                                                                                                alternateDirection,
+                                                                                                jobDates,
+                                                                                                startDate)
         new WeeklySchedule(name: map.name,
                            description: map.description,
                            displayName: map.displayName,
@@ -73,7 +73,15 @@ class ScheduleBuilder {
             // alternate dates before the start date don't make sense
             date >= startDate
         } - jobDates // no need to include already scheduled dates
-        [includeDates, excludeDates]
+        // sorting for clarity when users examine schedules
+        [includeDates.sort(), excludeDates.sort()]
+    }
+
+    static Set<LocalDate> getWeekendDates(Set<LocalDate> jobDates) {
+        def weekendDays = [DayOfWeek.SATURDAY, DayOfWeek.SUNDAY]
+        jobDates.findAll { date ->
+            weekendDays.contains(getDayOfWeek(date))
+        }
     }
 
     static MonthlySchedule getMonthlySchedule(map) {
@@ -84,11 +92,18 @@ class ScheduleBuilder {
                                                    endDate,
                                                    daysOfMonth)
         Set<LocalDate> holidays = map.holidays
+        WeekendDates includeWeekendDates = map.include
+
+        if (includeWeekendDates == WeekendDates.No) {
+            // we can consider weekends holidays to work around
+            holidays.addAll(getWeekendDates(jobDates))
+        }
+
         Direction alternateDirection = map.alternateDirection
-        def (Set<LocalDate> includeDates, Collection<LocalDate> excludeDates) = getIncludeExcludeDates(holidays,
-                                                                                                       alternateDirection,
-                                                                                                       jobDates,
-                                                                                                       startDate)
+        def (Set<LocalDate> includeDates, Set<LocalDate> excludeDates) = getIncludeExcludeDates(holidays,
+                                                                                                alternateDirection,
+                                                                                                jobDates,
+                                                                                                startDate)
         new MonthlySchedule(name: map.name,
                             description: map.description,
                             displayName: map.displayName,
