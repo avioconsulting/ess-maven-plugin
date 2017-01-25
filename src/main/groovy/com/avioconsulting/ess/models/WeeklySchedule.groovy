@@ -7,6 +7,10 @@ import java.time.DayOfWeek
 
 @Canonical
 @InheritConstructors
-class WeeklySchedule {
+class WeeklySchedule extends RecurringSchedule {
     List<DayOfWeek> daysOfWeek
+
+    Frequency getFrequency() {
+        return Frequency.Weekly
+    }
 }

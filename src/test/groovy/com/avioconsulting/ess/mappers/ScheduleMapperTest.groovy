@@ -1,6 +1,7 @@
 package com.avioconsulting.ess.mappers
 
 import com.avioconsulting.ess.models.RecurringSchedule
+import com.avioconsulting.ess.models.WeeklySchedule
 import oracle.as.scheduler.ExplicitDate
 import oracle.as.scheduler.RecurrenceFields
 import org.joda.time.DateTime
@@ -58,12 +59,11 @@ class ScheduleMapperTest {
     @Test
     void getOracleSchedule_Description() {
         // arrange
-        def schedule = new RecurringSchedule(
+        def schedule = new WeeklySchedule(
                 name: 'the_sch_name',
                 description: 'the description',
                 displayName: 'the display name',
                 timeZone: DateTimeZone.forID('America/New_York'),
-                frequency: RecurringSchedule.Frequency.Weekly,
                 startDate: new LocalDate(2017, 1, 1),
                 endDate: new LocalDate(2017, 2, 1),
                 repeatInterval: 1,
@@ -96,12 +96,11 @@ class ScheduleMapperTest {
     @Test
     void getOracleSchedule_serverCentral_machineLA_jobNY() {
         // arrange
-        def schedule = new RecurringSchedule(
+        def schedule = new WeeklySchedule(
                 name: 'the_sch_name',
                 description: 'the description',
                 displayName: 'the display name',
                 timeZone: DateTimeZone.forID('America/New_York'),
-                frequency: RecurringSchedule.Frequency.Weekly,
                 startDate: new LocalDate(2017, 1, 1),
                 endDate: new LocalDate(2017, 2, 1),
                 repeatInterval: 1,
@@ -134,12 +133,11 @@ class ScheduleMapperTest {
     @Test
     void getOracleSchedule_serverCentral_machineLA_jobCentral() {
         // arrange
-        def schedule = new RecurringSchedule(
+        def schedule = new WeeklySchedule(
                 name: 'the_sch_name',
                 description: 'the description',
                 displayName: 'the display name',
                 timeZone: DateTimeZone.forID('America/Chicago'),
-                frequency: RecurringSchedule.Frequency.Weekly,
                 startDate: new LocalDate(2017, 1, 1),
                 endDate: new LocalDate(2017, 2, 1),
                 repeatInterval: 1,
@@ -172,12 +170,11 @@ class ScheduleMapperTest {
     @Test
     void getOracleSchedule_serverCentral_machineCentral_jobCentral() {
         // arrange
-        def schedule = new RecurringSchedule(
+        def schedule = new WeeklySchedule(
                 name: 'the_sch_name',
                 description: 'the description',
                 displayName: 'the display name',
                 timeZone: DateTimeZone.forID('America/Chicago'),
-                frequency: RecurringSchedule.Frequency.Weekly,
                 startDate: new LocalDate(2017, 1, 1),
                 endDate: new LocalDate(2017, 2, 1),
                 repeatInterval: 1,

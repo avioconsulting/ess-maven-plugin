@@ -2,7 +2,7 @@ package com.avioconsulting.ess.builders
 
 import com.avioconsulting.ess.models.Direction
 import com.avioconsulting.ess.models.RecurringSchedule
-
+import com.avioconsulting.ess.models.WeeklySchedule
 import net.objectlab.kit.datecalc.common.DefaultHolidayCalendar
 import net.objectlab.kit.datecalc.common.HolidayCalendar
 import net.objectlab.kit.datecalc.joda.LocalDateCalculator
@@ -50,18 +50,17 @@ class ScheduleBuilder {
             // alternate dates before the start date don't make sense
             date >= startDate
         } - jobDates // no need to include already scheduled dates
-        new RecurringSchedule(name: map.name,
-                              description: map.description,
-                              displayName: map.displayName,
-                              timeZone: map.timeZone,
-                              frequency: RecurringSchedule.Frequency.Weekly,
-                              startDate: startDate,
-                              endDate: map.endDate,
-                              repeatInterval: 1,
-                              daysOfWeek: daysOfWeek,
-                              timeOfDay: map.timeOfDay,
-                              includeDates: includeDates,
-                              excludeDates: excludeDates)
+        new WeeklySchedule(name: map.name,
+                           description: map.description,
+                           displayName: map.displayName,
+                           timeZone: map.timeZone,
+                           startDate: startDate,
+                           endDate: map.endDate,
+                           repeatInterval: 1,
+                           daysOfWeek: daysOfWeek,
+                           timeOfDay: map.timeOfDay,
+                           includeDates: includeDates,
+                           excludeDates: excludeDates)
     }
 
     /**

@@ -27,7 +27,8 @@ class ScheduleMapper {
     }
 
     private static final Map<RecurringSchedule.Frequency, RecurrenceFields.FREQUENCY> frequencyMapping = [
-            (RecurringSchedule.Frequency.Weekly): RecurrenceFields.FREQUENCY.WEEKLY
+            (RecurringSchedule.Frequency.Weekly): RecurrenceFields.FREQUENCY.WEEKLY,
+            (RecurringSchedule.Frequency.Monthly): RecurrenceFields.FREQUENCY.MONTHLY
     ]
 
     private static final Map<DayOfWeek, RecurrenceFields.DAY_OF_WEEK> dayOfWeekMapping = [
