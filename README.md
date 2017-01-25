@@ -76,6 +76,9 @@ class SimplyBetter implements JobDefinitionFactory, ScheduleFactory, JobRequestF
 }
 ```
 
+This example will automatically create a schedule in ESS that uses ESS' weekly schedule capability but adds the proper exclude dates for holidays (and includes alternate dates).
+
+
 Example using a monthly schedule:
 
 ```groovy
@@ -133,9 +136,6 @@ class SimplyBetter implements JobDefinitionFactory, ScheduleFactory, JobRequestF
   }
 }
 ```
-
-
-This example will automatically create a schedule in ESS that uses ESS' weekly schedule capability but adds the proper exclude dates for holidays (and includes alternate dates).
 
 ## FAQ
 
