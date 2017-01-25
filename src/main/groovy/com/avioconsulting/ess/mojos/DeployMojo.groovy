@@ -1,10 +1,14 @@
 package com.avioconsulting.ess.mojos
 
-import com.avioconsulting.ess.wrappers.MetadataServiceWrapper
-import com.avioconsulting.ess.wrappers.RuntimeServiceWrapper
 import com.avioconsulting.ess.factories.JobDefinitionFactory
 import com.avioconsulting.ess.factories.JobRequestFactory
 import com.avioconsulting.ess.factories.ScheduleFactory
+import com.avioconsulting.ess.models.JobDefinition
+import com.avioconsulting.ess.models.MonthlySchedule
+import com.avioconsulting.ess.models.RecurringSchedule
+import com.avioconsulting.ess.models.WeeklySchedule
+import com.avioconsulting.ess.wrappers.MetadataServiceWrapper
+import com.avioconsulting.ess.wrappers.RuntimeServiceWrapper
 import oracle.as.scheduler.MetadataService
 import oracle.as.scheduler.MetadataServiceHandle
 import oracle.as.scheduler.RuntimeService
@@ -77,19 +81,38 @@ class DeployMojo extends AbstractMojo {
             }
 
             def reflections = getReflectionsUtility()
-
+            List<JobDefinition> newJobDefs = []
+            List<JobDefinition> updateJobDefs = []
+            List<JobDefinition> canceledJobDefs = []
             withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
                 def existingDefs = metadataWrapper.existingDefinitions
                 reflections.getSubTypesOf(JobDefinitionFactory).each { klass ->
                     def jobDefFactory = klass.newInstance()
                     def jobDef = jobDefFactory.createJobDefinition()
-                    if (existingDefs.contains(jobDef.name)) {
-                        this.log.info "Updating job definition ${jobDef.name}..."
-                        metadataWrapper.updateDefinition(jobDef)
+                    def existingJob = existingDefs.contains(jobDef.name)
+                    if (existingJob && metadataWrapper.hasJobDefinitionTypeChanged(jobDef)) {
+                        this.log.info "Job definition ${jobDef.name} type has changed, therefore a new definition/requests must be created since ESS cannot update a job type..."
+                        runtimeWrapper.cancelRequestsFor(jobDef)
+                        canceledJobDefs << jobDef
+                    } else if (existingJob) {
+                        updateJobDefs << jobDef
                     } else {
-                        this.log.info "Creating job definition ${jobDef.name}..."
-                        metadataWrapper.createDefinition(jobDef)
+                        newJobDefs << jobDef
                     }
+                }
+            }
+
+            cancelAndDeleteRequests(canceledJobDefs)
+            newJobDefs.addAll(canceledJobDefs)
+
+            withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
+                newJobDefs.each { jobDef ->
+                    this.log.info "Creating job definition ${jobDef.name}..."
+                    metadataWrapper.createDefinition(jobDef)
+                }
+                updateJobDefs.each { jobDef ->
+                    this.log.info "Updating job definition ${jobDef.name}..."
+                    metadataWrapper.updateDefinition(jobDef)
                 }
 
                 this.log.info 'Job definitions complete'
@@ -98,14 +121,7 @@ class DeployMojo extends AbstractMojo {
                 reflections.getSubTypesOf(ScheduleFactory).each { klass ->
                     def scheduleFactory = klass.newInstance()
                     def schedule = scheduleFactory.createSchedule()
-                    this.log.info "Schedule details for: ${schedule.name}"
-                    this.log.info "--- Display name: ${schedule.displayName}"
-                    this.log.info "--- Time of day: ${schedule.timeOfDay}"
-                    this.log.info "--- Days of week: ${schedule.daysOfWeek}"
-                    this.log.info "--- Start date: ${schedule.startDate}"
-                    this.log.info "--- End date: ${schedule.endDate}"
-                    this.log.info "--- Exclude dates: ${schedule.excludeDates}"
-                    this.log.info "--- Include dates: ${schedule.includeDates}"
+                    logScheduleInfo(schedule)
                     if (existingSchedules.contains(schedule.name)) {
                         // update
                         this.log.info 'Updating schedule...'
@@ -138,6 +154,44 @@ class DeployMojo extends AbstractMojo {
         }
     }
 
+    private void cancelAndDeleteRequests(List<JobDefinition> canceledJobDefs) {
+        // need 2 transactions for cancel/delete job type changes
+        deployerWithRetries { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
+            canceledJobDefs.each { jobDef ->
+                runtimeWrapper.deleteRequestsFor(jobDef)
+            }
+        }
+
+        withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
+            canceledJobDefs.each { jobDef ->
+                metadataWrapper.deleteDefinition(jobDef)
+            }
+        }
+    }
+
+    private void logScheduleInfo(RecurringSchedule schedule) {
+        def log = this.log
+        log.info "Schedule details for: ${schedule.name}"
+        log.info "--- Display name : ${schedule.displayName}"
+        log.info "--- Time of day  : ${schedule.timeOfDay}"
+        log.info "--- Frequency    : ${schedule.frequency}"
+        switch (schedule) {
+            case WeeklySchedule:
+                log.info "--- Days of week : ${schedule.daysOfWeek}"
+                break
+            case MonthlySchedule:
+                log.info "--- Days of month: ${schedule.daysOfMonth}"
+                break
+            default:
+                throw new Exception(
+                        "Unknown schedule type ${schedule.getClass()}! A developer did not do their job!")
+        }
+        log.info "--- Start date   : ${schedule.startDate}"
+        log.info "--- End date     : ${schedule.endDate}"
+        log.info "--- Exclude dates: ${schedule.excludeDates}"
+        log.info "--- Include dates: ${schedule.includeDates}"
+    }
+
     private getReflectionsUtility() {
         // artifacts from our project, which is where the configuration is, won't be in the classpath by default
         ClasspathHelper.contextClassLoader().addURL(this.project.artifact.file.toURL())
@@ -156,14 +210,20 @@ class DeployMojo extends AbstractMojo {
         withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
             runtimeWrapper.cancelAllRequests()
         }
+        deployerWithRetries { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
+            runtimeWrapper.deleteAllRequests()
+            metadataWrapper.deleteAllSchedules()
+            metadataWrapper.deleteAllDefinitions()
+        }
+    }
+
+    def deployerWithRetries(Closure closure) {
         [1..DELETE_RETRIES][0].find { index ->
             try {
                 // when we retry, we have to start a whole new transaction
                 withDeployerTransaction {
                     MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
-                        runtimeWrapper.deleteAllRequests()
-                        metadataWrapper.deleteAllSchedules()
-                        metadataWrapper.deleteAllDefinitions()
+                        closure(metadataWrapper, runtimeWrapper)
                 }
                 return true
             }

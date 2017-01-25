@@ -7,6 +7,8 @@ import org.joda.time.LocalDate
 import org.joda.time.LocalTime
 import org.junit.Test
 
+import java.time.DayOfWeek
+
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
 import static org.junit.Assert.assertThat
@@ -14,10 +16,21 @@ import static org.junit.Assert.assertThat
 class ScheduleBuilderTest {
     def getJobExecutionDates(LocalDate beginningDate,
                              LocalDate endDate,
-                             List<RecurringSchedule.DayOfWeek> daysOfWeek) {
+                             List<DayOfWeek> daysOfWeek) {
         Set<LocalDate> result = ScheduleBuilder.getJobExecutionDates(beginningDate,
                                                                      endDate,
                                                                      daysOfWeek)
+        result.collect { date ->
+            date.toString()
+        }
+    }
+
+    def getMonthlyJobExecutionDates(LocalDate beginningDate,
+                                    LocalDate endDate,
+                                    List<Integer> daysOfMonth) {
+        Set<LocalDate> result = ScheduleBuilder.getMonthlyJobExecutionDates(beginningDate,
+                                                                            endDate,
+                                                                            daysOfMonth)
         result.collect { date ->
             date.toString()
         }
@@ -36,20 +49,20 @@ class ScheduleBuilderTest {
     }
 
     @Test
-    void getSchedule() {
+    void getWeeklySchedule() {
         // arrange
 
         // act
-        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
-                                                   displayName: 'the schedule',
-                                                   description: 'Weekly schedule on mondays',
-                                                   startDate: new LocalDate(2017, 1, 1),
-                                                   endDate: new LocalDate(2017, 2, 27),
-                                                   timeOfDay: new LocalTime(9, 15, 10),
-                                                   timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Monday],
-                                                   holidays: [new LocalDate(2017, 1, 30)],
-                                                   alternateDirection: Direction.Backward
+        def schedule = ScheduleBuilder.getWeeklySchedule name: 'the_schedule',
+                                                         displayName: 'the schedule',
+                                                         description: 'Weekly schedule on mondays',
+                                                         startDate: new LocalDate(2017, 1, 1),
+                                                         endDate: new LocalDate(2017, 2, 27),
+                                                         timeOfDay: new LocalTime(9, 15, 10),
+                                                         timeZone: DateTimeZone.forID('America/Denver'),
+                                                         daysOfWeek: [DayOfWeek.MONDAY],
+                                                         holidays: [new LocalDate(2017, 1, 30)],
+                                                         alternateDirection: Direction.Backward
 
         // assert
         // not using count to limit
@@ -66,7 +79,7 @@ class ScheduleBuilderTest {
         assertThat schedule.description,
                    is(equalTo('Weekly schedule on mondays'))
         assertThat schedule.daysOfWeek,
-                   is(equalTo([RecurringSchedule.DayOfWeek.Monday]))
+                   is(equalTo([DayOfWeek.MONDAY]))
         assertThat schedule.frequency,
                    is(equalTo(RecurringSchedule.Frequency.Weekly))
         assertThat schedule.timeZone,
@@ -88,22 +101,168 @@ class ScheduleBuilderTest {
     }
 
     @Test
-    void getSchedule_2ConsecutiveDays() {
+    void getMonthlySchedule_WeekendsIncluded() {
         // arrange
 
         // act
-        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
-                                                   displayName: 'the schedule',
-                                                   description: 'Weekly schedule',
-                                                   startDate: new LocalDate(2017, 1, 1),
-                                                   endDate: new LocalDate(2017, 2, 27),
-                                                   timeOfDay: new LocalTime(9, 15, 10),
-                                                   timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Monday,
-                                                                RecurringSchedule.DayOfWeek.Tuesday],
-                                                   holidays: [new LocalDate(2017, 1, 30),
-                                                              new LocalDate(2017, 1, 31)],
-                                                   alternateDirection: Direction.Backward
+        def schedule = ScheduleBuilder.getMonthlySchedule name: 'the_schedule',
+                                                          displayName: 'the schedule',
+                                                          description: 'Monthly schedule',
+                                                          startDate: new LocalDate(2017, 1, 1),
+                                                          include: WeekendDates.Yes,
+                                                          endDate: new LocalDate(2017, 2, 27),
+                                                          timeOfDay: new LocalTime(9, 15, 10),
+                                                          timeZone: DateTimeZone.forID('America/Denver'),
+                                                          daysOfMonth: [1, 30],
+                                                          holidays: [new LocalDate(2017, 1, 30)],
+                                                          alternateDirection: Direction.Backward
+
+        // assert
+        // not using count to limit
+        assertThat schedule.recurrenceCount,
+                   is(equalTo(0))
+        assertThat schedule.startDate,
+                   is(equalTo(new LocalDate(2017, 1, 1)))
+        assertThat schedule.endDate,
+                   is(equalTo(new LocalDate(2017, 2, 27)))
+        assertThat schedule.name,
+                   is(equalTo('the_schedule'))
+        assertThat schedule.displayName,
+                   is(equalTo('the schedule'))
+        assertThat schedule.description,
+                   is(equalTo('Monthly schedule'))
+        assertThat schedule.daysOfMonth,
+                   is(equalTo([1, 30]))
+        assertThat schedule.frequency,
+                   is(equalTo(RecurringSchedule.Frequency.Monthly))
+        assertThat schedule.timeZone,
+                   is(equalTo(DateTimeZone.forID('America/Denver')))
+        // only supporting every 1 week right now
+        assertThat schedule.repeatInterval,
+                   is(equalTo(1))
+        assertThat schedule.timeOfDay,
+                   is(equalTo(new LocalTime(9, 15, 10)))
+        assertThat schedule.includeDates.size(),
+                   is(equalTo(1))
+        // friday before the 30th since 30th is a holiday
+        assertThat schedule.includeDates[0],
+                   is(equalTo(new LocalDate(2017, 1, 27)))
+        assertThat schedule.excludeDates.size(),
+                   is(equalTo(1))
+        assertThat schedule.excludeDates[0],
+                   is(equalTo(new LocalDate(2017, 1, 30)))
+    }
+
+    @Test
+    void getMonthlySchedule_WeekendsNotIncluded() {
+        // arrange
+
+        // act
+        def schedule = ScheduleBuilder.getMonthlySchedule name: 'the_schedule',
+                                                          displayName: 'the schedule',
+                                                          description: 'Monthly schedule',
+                                                          startDate: new LocalDate(2017, 1, 1),
+                                                          include: WeekendDates.No,
+                                                          endDate: new LocalDate(2017, 2, 27),
+                                                          timeOfDay: new LocalTime(9, 15, 10),
+                                                          timeZone: DateTimeZone.forID('America/Denver'),
+                                                          // 7th is a saturday, 1st is a sunday
+                                                          daysOfMonth: [1, 7, 30],
+                                                          holidays: [new LocalDate(2017, 1, 30)],
+                                                          alternateDirection: Direction.Backward
+
+        // assert
+        // not using count to limit
+        assertThat schedule.recurrenceCount,
+                   is(equalTo(0))
+        assertThat schedule.startDate,
+                   is(equalTo(new LocalDate(2017, 1, 1)))
+        assertThat schedule.endDate,
+                   is(equalTo(new LocalDate(2017, 2, 27)))
+        assertThat schedule.name,
+                   is(equalTo('the_schedule'))
+        assertThat schedule.displayName,
+                   is(equalTo('the schedule'))
+        assertThat schedule.description,
+                   is(equalTo('Monthly schedule'))
+        assertThat schedule.daysOfMonth,
+                   is(equalTo([1, 7, 30]))
+        assertThat schedule.frequency,
+                   is(equalTo(RecurringSchedule.Frequency.Monthly))
+        assertThat schedule.timeZone,
+                   is(equalTo(DateTimeZone.forID('America/Denver')))
+        // only supporting every 1 week right now
+        assertThat schedule.repeatInterval,
+                   is(equalTo(1))
+        assertThat schedule.timeOfDay,
+                   is(equalTo(new LocalTime(9, 15, 10)))
+        assertThat schedule.includeDates.size(),
+                   is(equalTo(2))
+        // 6th is the substitute day for the 7th
+        assertThat schedule.includeDates[0],
+                   is(equalTo(new LocalDate(2017, 1, 6)))
+        // friday before the 30th since 30th is a holiday
+        assertThat schedule.includeDates[1],
+                   is(equalTo(new LocalDate(2017, 1, 27)))
+        assertThat schedule.excludeDates.size(),
+                   is(equalTo(3))
+        // 1st is a sunday
+        assertThat schedule.excludeDates[0],
+                   is(equalTo(new LocalDate(2017, 1, 1)))
+        // 7th is a saturday
+        assertThat schedule.excludeDates[1],
+                   is(equalTo(new LocalDate(2017, 1, 7)))
+        assertThat schedule.excludeDates[2],
+                   is(equalTo(new LocalDate(2017, 1, 30)))
+    }
+
+    @Test
+    void getMonthlySchedule_WeekendsNotIncluded_AlternateIsHoliday() {
+        // arrange
+
+        // act
+        def schedule = ScheduleBuilder.getMonthlySchedule name: 'the_schedule',
+                                                          displayName: 'the schedule',
+                                                          description: 'Monthly schedule',
+                                                          startDate: new LocalDate(2017, 1, 1),
+                                                          include: WeekendDates.No,
+                                                          endDate: new LocalDate(2017, 2, 27),
+                                                          timeOfDay: new LocalTime(9, 15, 10),
+                                                          timeZone: DateTimeZone.forID('America/Denver'),
+                                                          // 7th is a saturday
+                                                          daysOfMonth: [7],
+                                                          holidays: [new LocalDate(2017, 1, 6)],
+                                                          alternateDirection: Direction.Backward
+
+        // assert
+        assertThat schedule.includeDates.size(),
+                   is(equalTo(1))
+        // 6th is the alternate date for the weekend day but it's a holiday
+        assertThat schedule.includeDates[0],
+                   is(equalTo(new LocalDate(2017, 1, 5)))
+        assertThat schedule.excludeDates.size(),
+                   is(equalTo(1))
+        assertThat schedule.excludeDates[0],
+                   is(equalTo(new LocalDate(2017, 1, 7)))
+    }
+
+    @Test
+    void getWeeklySchedule_2ConsecutiveDays() {
+        // arrange
+
+        // act
+        def schedule = ScheduleBuilder.getWeeklySchedule name: 'the_schedule',
+                                                         displayName: 'the schedule',
+                                                         description: 'Weekly schedule',
+                                                         startDate: new LocalDate(2017, 1, 1),
+                                                         endDate: new LocalDate(2017, 2, 27),
+                                                         timeOfDay: new LocalTime(9, 15, 10),
+                                                         timeZone: DateTimeZone.forID('America/Denver'),
+                                                         daysOfWeek: [DayOfWeek.MONDAY,
+                                                                      DayOfWeek.TUESDAY],
+                                                         holidays: [new LocalDate(2017, 1, 30),
+                                                                    new LocalDate(2017, 1, 31)],
+                                                         alternateDirection: Direction.Backward
 
         // assert
         assertThat schedule.recurrenceCount,
@@ -122,21 +281,21 @@ class ScheduleBuilderTest {
     }
 
     @Test
-    void getSchedule_InclusionDateIsRegularlyScheduledDate() {
+    void getWeeklySchedule_InclusionDateIsRegularlyScheduledDate() {
         // arrange
 
         // act
-        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
-                                                   displayName: 'the schedule',
-                                                   description: 'Weekly schedule',
-                                                   startDate: new LocalDate(2017, 1, 1),
-                                                   endDate: new LocalDate(2017, 2, 27),
-                                                   timeOfDay: new LocalTime(9, 15, 10),
-                                                   timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Monday,
-                                                                RecurringSchedule.DayOfWeek.Tuesday],
-                                                   holidays: [new LocalDate(2017, 1, 31)],
-                                                   alternateDirection: Direction.Backward
+        def schedule = ScheduleBuilder.getWeeklySchedule name: 'the_schedule',
+                                                         displayName: 'the schedule',
+                                                         description: 'Weekly schedule',
+                                                         startDate: new LocalDate(2017, 1, 1),
+                                                         endDate: new LocalDate(2017, 2, 27),
+                                                         timeOfDay: new LocalTime(9, 15, 10),
+                                                         timeZone: DateTimeZone.forID('America/Denver'),
+                                                         daysOfWeek: [DayOfWeek.MONDAY,
+                                                                      DayOfWeek.TUESDAY],
+                                                         holidays: [new LocalDate(2017, 1, 31)],
+                                                         alternateDirection: Direction.Backward
 
         // assert
         assertThat schedule.recurrenceCount,
@@ -151,20 +310,21 @@ class ScheduleBuilderTest {
     }
 
     @Test
-    void getSchedule_InclusionBeforeStart() {
+    void getWeeklySchedule_InclusionBeforeStart() {
         // arrange
 
         // act
-        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
-                                                   displayName: 'the schedule',
-                                                   description: 'Weekly schedule',
-                                                   startDate: new LocalDate(2017, 1, 1),
-                                                   endDate: new LocalDate(2017, 2, 27),
-                                                   timeOfDay: new LocalTime(9, 15, 10),
-                                                   timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Monday],
-                                                   holidays: [new LocalDate(2017, 1, 2), new LocalDate(2017, 1, 23)],
-                                                   alternateDirection: Direction.Backward
+        def schedule = ScheduleBuilder.getWeeklySchedule name: 'the_schedule',
+                                                         displayName: 'the schedule',
+                                                         description: 'Weekly schedule',
+                                                         startDate: new LocalDate(2017, 1, 1),
+                                                         endDate: new LocalDate(2017, 2, 27),
+                                                         timeOfDay: new LocalTime(9, 15, 10),
+                                                         timeZone: DateTimeZone.forID('America/Denver'),
+                                                         daysOfWeek: [DayOfWeek.MONDAY],
+                                                         holidays: [new LocalDate(2017, 1, 2), new LocalDate(2017, 1,
+                                                                                                             23)],
+                                                         alternateDirection: Direction.Backward
 
         // assert
         assertThat schedule.recurrenceCount,
@@ -184,24 +344,24 @@ class ScheduleBuilderTest {
     }
 
     @Test
-    void getSchedule_Weekend() {
+    void getWeeklySchedule_Weekend() {
         // arrange
 
         // act
-        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
-                                                   displayName: 'the schedule',
-                                                   description: 'Weekly schedule on mondays',
-                                                   startDate: new LocalDate(2017, 1, 1),
-                                                   endDate: new LocalDate(2017, 2, 27),
-                                                   timeOfDay: new LocalTime(9, 15, 10),
-                                                   timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Sunday],
-                                                   holidays: [],
-                                                   alternateDirection: Direction.Backward
+        def schedule = ScheduleBuilder.getWeeklySchedule name: 'the_schedule',
+                                                         displayName: 'the schedule',
+                                                         description: 'Weekly schedule on mondays',
+                                                         startDate: new LocalDate(2017, 1, 1),
+                                                         endDate: new LocalDate(2017, 2, 27),
+                                                         timeOfDay: new LocalTime(9, 15, 10),
+                                                         timeZone: DateTimeZone.forID('America/Denver'),
+                                                         daysOfWeek: [DayOfWeek.SUNDAY],
+                                                         holidays: [],
+                                                         alternateDirection: Direction.Backward
 
         // assert
         assertThat schedule.daysOfWeek,
-                   is(equalTo([RecurringSchedule.DayOfWeek.Sunday]))
+                   is(equalTo([DayOfWeek.SUNDAY]))
         assertThat schedule.includeDates.size(),
                    is(equalTo(0))
         assertThat schedule.excludeDates.size(),
@@ -209,24 +369,24 @@ class ScheduleBuilderTest {
     }
 
     @Test
-    void getSchedule_NoHolidays() {
+    void getWeeklySchedule_NoHolidays() {
         // arrange
 
         // act
-        def schedule = ScheduleBuilder.getSchedule name: 'the_schedule',
-                                                   displayName: 'the schedule',
-                                                   description: 'Weekly schedule on mondays',
-                                                   startDate: new LocalDate(2017, 1, 1),
-                                                   endDate: new LocalDate(2017, 2, 27),
-                                                   timeOfDay: new LocalTime(9, 15, 10),
-                                                   timeZone: DateTimeZone.forID('America/Denver'),
-                                                   daysOfWeek: [RecurringSchedule.DayOfWeek.Monday],
-                                                   holidays: [],
-                                                   alternateDirection: Direction.Backward
+        def schedule = ScheduleBuilder.getWeeklySchedule name: 'the_schedule',
+                                                         displayName: 'the schedule',
+                                                         description: 'Weekly schedule on mondays',
+                                                         startDate: new LocalDate(2017, 1, 1),
+                                                         endDate: new LocalDate(2017, 2, 27),
+                                                         timeOfDay: new LocalTime(9, 15, 10),
+                                                         timeZone: DateTimeZone.forID('America/Denver'),
+                                                         daysOfWeek: [DayOfWeek.MONDAY],
+                                                         holidays: [],
+                                                         alternateDirection: Direction.Backward
 
         // assert
         assertThat schedule.daysOfWeek,
-                   is(equalTo([RecurringSchedule.DayOfWeek.Monday]))
+                   is(equalTo([DayOfWeek.MONDAY]))
         assertThat schedule.includeDates.size(),
                    is(equalTo(0))
         assertThat schedule.excludeDates.size(),
@@ -241,7 +401,7 @@ class ScheduleBuilderTest {
         // act
         def result = getJobExecutionDates(beginningDate,
                                           new LocalDate(2017, 2, 27),
-                                          [RecurringSchedule.DayOfWeek.Monday])
+                                          [DayOfWeek.MONDAY])
 
         // assert
         assertThat result,
@@ -266,7 +426,7 @@ class ScheduleBuilderTest {
         // act
         def result = getJobExecutionDates(beginningDate,
                                           new LocalDate(2017, 2, 28),
-                                          [RecurringSchedule.DayOfWeek.Tuesday])
+                                          [DayOfWeek.TUESDAY])
 
         // assert
         assertThat result,
@@ -292,8 +452,8 @@ class ScheduleBuilderTest {
         def result = getJobExecutionDates(beginningDate,
                                           new LocalDate(2017, 2, 28),
                                           [
-                                                  RecurringSchedule.DayOfWeek.Monday,
-                                                  RecurringSchedule.DayOfWeek.Tuesday
+                                                  DayOfWeek.MONDAY,
+                                                  DayOfWeek.TUESDAY
                                           ])
 
         // assert
@@ -329,8 +489,8 @@ class ScheduleBuilderTest {
         def result = getJobExecutionDates(beginningDate,
                                           new LocalDate(2017, 2, 28),
                                           [
-                                                  RecurringSchedule.DayOfWeek.Tuesday,
-                                                  RecurringSchedule.DayOfWeek.Monday
+                                                  DayOfWeek.TUESDAY,
+                                                  DayOfWeek.MONDAY
                                           ])
 
         // assert
@@ -365,7 +525,7 @@ class ScheduleBuilderTest {
         // act
         def result = getJobExecutionDates(beginningDate,
                                           new LocalDate(2017, 1, 31),
-                                          [RecurringSchedule.DayOfWeek.Sunday])
+                                          [DayOfWeek.SUNDAY])
 
         // assert
         assertThat result,
@@ -375,6 +535,46 @@ class ScheduleBuilderTest {
                            '2017-01-15',
                            '2017-01-22',
                            '2017-01-29'
+                   ]))
+    }
+
+    @Test
+    void getMonthlyJobExecutionDates() {
+        // arrange
+        def beginningDate = new LocalDate(2017, 1, 1)
+
+        // act
+        def result = getMonthlyJobExecutionDates(beginningDate,
+                                                 new LocalDate(2017, 3, 31),
+                                                 [1, 10])
+
+        // assert
+        assertThat result,
+                   is(equalTo([
+                           '2017-01-01',
+                           '2017-01-10',
+                           '2017-02-01',
+                           '2017-02-10',
+                           '2017-03-01',
+                           '2017-03-10',
+                   ]))
+    }
+
+    @Test
+    void getMonthlyJobExecutionDates_ExceedsMonthEnd() {
+        // arrange
+        def beginningDate = new LocalDate(2017, 1, 1)
+
+        // act
+        def result = getMonthlyJobExecutionDates(beginningDate,
+                                                 new LocalDate(2017, 3, 31),
+                                                 [31])
+
+        // assert
+        assertThat result,
+                   is(equalTo([
+                           '2017-01-31',
+                           '2017-03-31',
                    ]))
     }
 

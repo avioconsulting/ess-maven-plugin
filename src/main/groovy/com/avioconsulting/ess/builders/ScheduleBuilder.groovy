@@ -1,13 +1,15 @@
 package com.avioconsulting.ess.builders
 
 import com.avioconsulting.ess.models.Direction
-import com.avioconsulting.ess.models.RecurringSchedule
-import com.avioconsulting.ess.models.RecurringSchedule.DayOfWeek
+import com.avioconsulting.ess.models.MonthlySchedule
+import com.avioconsulting.ess.models.WeeklySchedule
 import net.objectlab.kit.datecalc.common.DefaultHolidayCalendar
 import net.objectlab.kit.datecalc.common.HolidayCalendar
 import net.objectlab.kit.datecalc.joda.LocalDateCalculator
 import net.objectlab.kit.datecalc.joda.LocalDateKitCalculatorsFactory
 import org.joda.time.LocalDate
+
+import java.time.DayOfWeek
 
 class ScheduleBuilder {
     static private final String NO_HOLIDAY_CALENDAR = 'NO_HOLIDAY_CALENDAR'
@@ -33,33 +35,118 @@ class ScheduleBuilder {
      * @param alternateDirection
      * @return
      */
-    static RecurringSchedule getSchedule(map) {
-        def daysOfWeek = map.daysOfWeek
+    static WeeklySchedule getWeeklySchedule(Map map) {
+        validateKeys map, [
+                'daysOfWeek',
+                'startDate',
+                'endDate',
+                'holidays',
+                'alternateDirection',
+                'name',
+                'description',
+                'displayName',
+                'timeZone',
+                'timeOfDay'
+        ]
+        List<DayOfWeek> daysOfWeek = map.daysOfWeek
         LocalDate startDate = map.startDate
+        LocalDate endDate = map.endDate
         def jobDates = getJobExecutionDates(startDate,
-                                            map.endDate,
+                                            endDate,
                                             daysOfWeek)
         Set<LocalDate> holidays = map.holidays
+        Direction alternateDirection = map.alternateDirection
+        def (Set<LocalDate> includeDates, Set<LocalDate> excludeDates) = getIncludeExcludeDates(holidays,
+                                                                                                alternateDirection,
+                                                                                                jobDates,
+                                                                                                startDate)
+        new WeeklySchedule(name: map.name,
+                           description: map.description,
+                           displayName: map.displayName,
+                           timeZone: map.timeZone,
+                           startDate: startDate,
+                           endDate: endDate,
+                           repeatInterval: 1,
+                           daysOfWeek: daysOfWeek,
+                           timeOfDay: map.timeOfDay,
+                           includeDates: includeDates,
+                           excludeDates: excludeDates)
+    }
+
+    private static validateKeys(Map map, List requiredKeys) {
+        def missing = requiredKeys - map.keySet()
+        if (missing.any()) {
+            throw new Exception("Required parameters missing! ${missing}")
+        }
+    }
+
+    private static List getIncludeExcludeDates(Set<LocalDate> holidays,
+                                               Direction alternateDirection,
+                                               Set<LocalDate> jobDates,
+                                               LocalDate startDate) {
         Set<LocalDate> excludeDates = holidays.intersect(jobDates)
         Set<LocalDate> includeDates = getAlternateDates(excludeDates,
-                                                        map.alternateDirection,
+                                                        alternateDirection,
                                                         holidays)
         includeDates = includeDates.findAll { LocalDate date ->
             // alternate dates before the start date don't make sense
             date >= startDate
         } - jobDates // no need to include already scheduled dates
-        new RecurringSchedule(name: map.name,
-                              description: map.description,
-                              displayName: map.displayName,
-                              timeZone: map.timeZone,
-                              frequency: RecurringSchedule.Frequency.Weekly,
-                              startDate: startDate,
-                              endDate: map.endDate,
-                              repeatInterval: 1,
-                              daysOfWeek: daysOfWeek,
-                              timeOfDay: map.timeOfDay,
-                              includeDates: includeDates,
-                              excludeDates: excludeDates)
+        // sorting for clarity when users examine schedules
+        [includeDates.sort(), excludeDates.sort()]
+    }
+
+    static Set<LocalDate> getWeekendDates(Set<LocalDate> jobDates) {
+        def weekendDays = [DayOfWeek.SATURDAY, DayOfWeek.SUNDAY]
+        jobDates.findAll { date ->
+            weekendDays.contains(getDayOfWeek(date))
+        }
+    }
+
+    static MonthlySchedule getMonthlySchedule(Map map) {
+        validateKeys map, [
+                'daysOfMonth',
+                'include',
+                'startDate',
+                'endDate',
+                'holidays',
+                'alternateDirection',
+                'name',
+                'description',
+                'displayName',
+                'timeZone',
+                'timeOfDay'
+        ]
+        List<Integer> daysOfMonth = map.daysOfMonth
+        LocalDate startDate = map.startDate
+        LocalDate endDate = map.endDate
+        def jobDates = getMonthlyJobExecutionDates(startDate,
+                                                   endDate,
+                                                   daysOfMonth)
+        Set<LocalDate> holidays = map.holidays
+        WeekendDates includeWeekendDates = map.include
+
+        if (includeWeekendDates == WeekendDates.No) {
+            // we can consider weekends holidays to work around
+            holidays.addAll(getWeekendDates(jobDates))
+        }
+
+        Direction alternateDirection = map.alternateDirection
+        def (Set<LocalDate> includeDates, Set<LocalDate> excludeDates) = getIncludeExcludeDates(holidays,
+                                                                                                alternateDirection,
+                                                                                                jobDates,
+                                                                                                startDate)
+        new MonthlySchedule(name: map.name,
+                            description: map.description,
+                            displayName: map.displayName,
+                            timeZone: map.timeZone,
+                            startDate: startDate,
+                            endDate: endDate,
+                            repeatInterval: 1,
+                            daysOfMonth: daysOfMonth,
+                            timeOfDay: map.timeOfDay,
+                            includeDates: includeDates,
+                            excludeDates: excludeDates)
     }
 
     /**
@@ -72,11 +159,25 @@ class ScheduleBuilder {
      */
     private static Set<LocalDate> getJobExecutionDates(LocalDate beginningDate,
                                                        LocalDate endDate,
-                                                       List<RecurringSchedule.DayOfWeek> daysOfWeek) {
+                                                       List<DayOfWeek> daysOfWeek) {
         Set<LocalDate> list = []
         def currentDate = new LocalDate(beginningDate)
         while (currentDate <= endDate) {
             if (daysOfWeek.contains(getDayOfWeek(currentDate))) {
+                list << currentDate
+            }
+            currentDate = currentDate.plusDays(1)
+        }
+        list
+    }
+
+    private static Set<LocalDate> getMonthlyJobExecutionDates(LocalDate beginningDate,
+                                                              LocalDate endDate,
+                                                              List<Integer> daysOfMonth) {
+        Set<LocalDate> list = []
+        def currentDate = new LocalDate(beginningDate)
+        while (currentDate <= endDate) {
+            if (daysOfMonth.contains(currentDate.dayOfMonth)) {
                 list << currentDate
             }
             currentDate = currentDate.plusDays(1)

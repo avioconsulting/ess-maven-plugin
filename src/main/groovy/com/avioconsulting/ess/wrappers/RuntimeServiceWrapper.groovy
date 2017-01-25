@@ -7,7 +7,7 @@ import org.joda.time.DateTime
 
 class RuntimeServiceWrapper {
     private final RuntimeService runtimeService
-    private final RuntimeServiceHandle serviceHandle
+    private final RuntimeServiceHandle handle
     private final MetadataServiceWrapper metadataWrapper
     // should result in everything being returned
     private static final Filter everythingFilter = null
@@ -16,7 +16,7 @@ class RuntimeServiceWrapper {
     private final boolean holdRequests
 
     RuntimeServiceWrapper(RuntimeService runtimeService,
-                          RuntimeServiceHandle serviceHandle,
+                          RuntimeServiceHandle handle,
                           MetadataServiceWrapper metadataDeployer,
                           Closure logger,
                           boolean holdRequests) {
@@ -25,7 +25,7 @@ class RuntimeServiceWrapper {
         this.logger = logger
         this.metadataWrapper = metadataDeployer
         this.runtimeService = runtimeService
-        this.serviceHandle = serviceHandle
+        this.handle = handle
     }
 
     def cancelAllRequests() {
@@ -34,14 +34,14 @@ class RuntimeServiceWrapper {
         if (!idList.any()) {
             return
         }
-        def existing = this.runtimeService.getRequestDetails(this.serviceHandle,
+        def existing = this.runtimeService.getRequestDetails(this.handle,
                                                              (long[]) idList.toArray())
         // cancel any parents first
         existing.findAll {
             details -> details.parent == NO_PARENTS && ![State.CANCELLED, State.CANCELLING].contains(details.state)
         }.each { details ->
             this.logger "Canceling request ID ${details.requestId}"
-            this.runtimeService.cancelRequest(this.serviceHandle, details.requestId)
+            this.runtimeService.cancelRequest(this.handle, details.requestId)
         }
     }
 
@@ -49,19 +49,20 @@ class RuntimeServiceWrapper {
         def idList = getRequestIds()
         idList.each { id ->
             this.logger "Deleting request ID ${id}"
-            this.runtimeService.deleteRequest(this.serviceHandle, id)
+            this.runtimeService.deleteRequest(this.handle, id)
         }
     }
 
-    List<JobRequestMetadata> getExistingJobRequests() {
+    List<JobRequestMetadata> getExistingJobRequests(boolean includeCancelled = false) {
         def idList = getRequestIds()
         idList.collect { id ->
             // for some reason, the job requests we create via this API only return the schedule if we fetch
             // them individually. EM created requests do not have that problem
-            this.runtimeService.getRequestDetail(this.serviceHandle, id, true)
+            this.runtimeService.getRequestDetail(this.handle, id, true)
         }.findAll { details ->
             // we only need to update/work with parent requests
-            ![State.CANCELLED, State.CANCELLING].contains(details.state) && details.parent == NO_PARENTS
+            (includeCancelled || ![State.CANCELLED, State.CANCELLING].contains(
+                    details.state)) && details.parent == NO_PARENTS
         }.collect { details ->
             new JobRequestMetadata(jobDefinitionName: details.jobDefn.namePart,
                                    scheduleName: details.schedule.name,
@@ -69,8 +70,27 @@ class RuntimeServiceWrapper {
         }
     }
 
+    def cancelRequestsFor(com.avioconsulting.ess.models.JobDefinition definition) {
+        def existingRequests = getExistingJobRequests()
+        existingRequests.findAll { metadata -> metadata.jobDefinitionName == definition.name }
+                .each { ourRequest ->
+            this.logger "Cancelling job request ID ${ourRequest.id}..."
+            this.runtimeService.cancelRequest(this.handle, ourRequest.id)
+        }
+    }
+
+
+    def deleteRequestsFor(com.avioconsulting.ess.models.JobDefinition definition) {
+        def existingRequests = getExistingJobRequests(true)
+        existingRequests.findAll { metadata -> metadata.jobDefinitionName == definition.name }
+                .each { ourRequest ->
+            this.logger "Deleting job request ID ${ourRequest.id}..."
+            this.runtimeService.deleteRequest(this.handle, ourRequest.id)
+        }
+    }
+
     private List getRequestIds() {
-        def requestIds = this.runtimeService.queryRequests(this.serviceHandle,
+        def requestIds = this.runtimeService.queryRequests(this.handle,
                                                            everythingFilter,
                                                            null,
                                                            true)
@@ -84,7 +104,7 @@ class RuntimeServiceWrapper {
         def runtimeService = this.runtimeService
         def jobRequestId = metadata.id
         jobDef.parameters.all.each { param ->
-            runtimeService.updateRequestParameter(this.serviceHandle,
+            runtimeService.updateRequestParameter(this.handle,
                                                   jobRequestId,
                                                   param.name,
                                                   param.value)
@@ -93,14 +113,14 @@ class RuntimeServiceWrapper {
         // updating schedule creates a new 'pending' job request for the next date
         // this has to happen after we update the parameters from the job definition above
         def scheduleId = MetadataServiceWrapper.getScheduleId(metadata.scheduleName)
-        runtimeService.replaceSchedule(this.serviceHandle, jobRequestId, scheduleId)
-        def currentState = runtimeService.getRequestState(this.serviceHandle, jobRequestId)
+        runtimeService.replaceSchedule(this.handle, jobRequestId, scheduleId)
+        def currentState = runtimeService.getRequestState(this.handle, jobRequestId)
         if (this.holdRequests && currentState != State.HOLD) {
             this.logger 'Moving request to hold status'
-            runtimeService.holdRequest(this.serviceHandle, jobRequestId)
+            runtimeService.holdRequest(this.handle, jobRequestId)
         } else if (!this.holdRequests && currentState == State.HOLD) {
             this.logger 'Releasing request from hold'
-            runtimeService.releaseRequest(this.serviceHandle, jobRequestId)
+            runtimeService.releaseRequest(this.handle, jobRequestId)
         }
     }
 
@@ -115,7 +135,7 @@ class RuntimeServiceWrapper {
         def endDate = null
         def params = new RequestParameters()
         def runtimeService = this.runtimeService
-        def requestId = runtimeService.submitRequest(this.serviceHandle,
+        def requestId = runtimeService.submitRequest(this.handle,
                                                      request.submissionNotes,
                                                      jobDefId,
                                                      schedule,
@@ -126,7 +146,7 @@ class RuntimeServiceWrapper {
         this.logger "Request ${requestId} created..."
         if (this.holdRequests) {
             this.logger 'Putting request in a HOLD state'
-            runtimeService.holdRequest(this.serviceHandle, requestId)
+            runtimeService.holdRequest(this.handle, requestId)
         }
     }
 }

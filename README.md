@@ -20,7 +20,7 @@ In your project POM, it's important to set 2 properties:
 
 Create Groovy (or Java) classes in your project that implement the `JobDefinitionFactory`, `ScheduleFactory`, `JobRequestFactory` interfaces from the `com.avioconsulting.ess.factories package` in this plugin. The plugin automatically will find them and use them if you set `ess.config.package` properly in your POM.
 
-Example:
+Example using a weekly schedule:
 
 ```groovy
 package foobar
@@ -30,7 +30,8 @@ import com.avioconsulting.ess.factories.*
 import org.joda.time.DateTimeZone
 import org.joda.time.LocalDate
 import org.joda.time.LocalTime
-import com.avioconsulting.ess.builders.ScheduleBuilder
+import com.avioconsulting.ess.builders.*
+import java.time.DayOfWeek
 
 class SimplyBetter implements JobDefinitionFactory, ScheduleFactory, JobRequestFactory {
   JobDefinition createJobDefinition() {
@@ -56,16 +57,16 @@ class SimplyBetter implements JobDefinitionFactory, ScheduleFactory, JobRequestF
       '2017-12-25'
     ].collect { dateStr -> new LocalDate(dateStr) }
 
-    ScheduleBuilder.getSchedule name: 'SimplyBetter',
-                                displayName: 'the schedule',
-                                description: 'Weekly schedule on mondays',
-                                startDate: new LocalDate(2017, 1, 1),
-                                endDate: new LocalDate(2017, 12, 31),
-                                timeOfDay: new LocalTime(9, 15, 10),
-                                timeZone: DateTimeZone.forID('America/Denver'),
-                                daysOfWeek: [RecurringSchedule.DayOfWeek.Monday],
-                                holidays: holidays,
-                                alternateDirection: Direction.Backward
+    ScheduleBuilder.getWeeklySchedule name: 'SimplyBetter',
+                                      displayName: 'the schedule',
+                                      description: 'Weekly schedule on mondays',
+                                      startDate: new LocalDate(2017, 1, 1),
+                                      endDate: new LocalDate(2017, 12, 31),
+                                      timeOfDay: new LocalTime(9, 15, 10),
+                                      timeZone: DateTimeZone.forID('America/Denver'),
+                                      daysOfWeek: [DayOfWeek.MONDAY],
+                                      holidays: holidays,
+                                      alternateDirection: Direction.Backward
   }
 
   JobRequest createJobRequest() {
@@ -77,6 +78,65 @@ class SimplyBetter implements JobDefinitionFactory, ScheduleFactory, JobRequestF
 ```
 
 This example will automatically create a schedule in ESS that uses ESS' weekly schedule capability but adds the proper exclude dates for holidays (and includes alternate dates).
+
+
+Example using a monthly schedule:
+
+```groovy
+package foobar
+
+import com.avioconsulting.ess.models.*
+import com.avioconsulting.ess.factories.*
+import org.joda.time.DateTimeZone
+import org.joda.time.LocalDate
+import org.joda.time.LocalTime
+import com.avioconsulting.ess.builders.*
+
+class SimplyBetter implements JobDefinitionFactory, ScheduleFactory, JobRequestFactory {
+  JobDefinition createJobDefinition() {
+    new JobDefinition(jobType: JobDefinition.Types.SyncWebService,
+                      description: 'the description4',
+                      wsdlPath: '/some/wsdl6',
+                      service: 'the_service_3',
+                      port: 'the_port',
+                      operation: 'the_operation',
+                      message: '<message44/>',
+                      name: 'SimplyBetter')
+  }
+
+  RecurringSchedule createSchedule() {
+    def holidays = [
+      '2017-01-02',
+      '2017-02-20',
+      '2017-05-29',
+      '2017-07-04',
+      '2017-09-04',
+      '2017-11-23',
+      '2017-11-24',
+      '2017-12-25'
+    ].collect { dateStr -> new LocalDate(dateStr) }
+
+    ScheduleBuilder.getMonthlySchedule name: 'SimplyBetter',
+                                       displayName: 'the schedule',
+                                       description: 'a monthly schedule',
+                                       startDate: new LocalDate(2017, 1, 1),
+                                       endDate: new LocalDate(2017, 12, 31),
+                                       timeOfDay: new LocalTime(9, 15, 10),
+                                       timeZone: DateTimeZone.forID('America/Denver'),
+                                       daysOfMonth: [1, 31],
+                                       // if 'no', job dates that fall on weekends are treated as holidays and are excluded
+                                       include: WeekendDates.No,
+                                       holidays: holidays,
+                                       alternateDirection: Direction.Backward
+  }
+
+  JobRequest createJobRequest() {
+    new JobRequest(description: 'recurring job',
+                   schedule: createSchedule(),
+                   jobDefinition: createJobDefinition())
+  }
+}
+```
 
 ## FAQ
 
@@ -105,9 +165,3 @@ You can force deletion of ALL ESS data by running with the property `ess.clean.e
 ## Multi-module/Reactor projects
 
 Most projects will fall into this category. Because of the way the class loaders work, you'll need to ensure that the factory classes (see above) AND any resources you load from the classpath (e.g. request XML files) are uniquely named across projects.
-
-## Changing the web service type
-
-If you change the web service type (e.g. from 2 way synchronous to 1 way), the job definition is supposed to be updated with the new job type but that does not appear to happen. In addition, the job request is not updated with new request parameters (or the new job type). You'll need to manually (using EM) delete the job requests (including the parent requests) and job definitions and then run again.
-
-A TODO for the plugin is to detect if the job type is changing and if so: cancel exists requests, remove the job definition, then allow the job definition + requests to be recreated.
