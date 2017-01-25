@@ -417,11 +417,19 @@ class ScheduleBuilderTest {
     @Test
     void getMonthlyJobExecutionDates_ExceedsMonthEnd() {
         // arrange
+        def beginningDate = new LocalDate(2017, 1, 1)
 
         // act
+        def result = getMonthlyJobExecutionDates(beginningDate,
+                                                 new LocalDate(2017, 3, 31),
+                                                 [31])
 
         // assert
-        fail 'write this'
+        assertThat result,
+                   is(equalTo([
+                           '2017-01-31',
+                           '2017-03-31',
+                   ]))
     }
 
     @Test
