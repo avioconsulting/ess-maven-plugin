@@ -1,12 +1,11 @@
 package com.avioconsulting.ess.mojos
 
 import com.avioconsulting.ess.factories.PolicyAttachmentFactory
-import com.avioconsulting.util.PythonCaller
+import com.avioconsulting.ess.wrappers.WsmWrapper
 import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugin.MojoFailureException
 import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
-import org.python.core.PyString
 
 @Mojo(name = 'attachPolicies')
 class WsmMojo extends CommonMojo {
@@ -23,15 +22,7 @@ class WsmMojo extends CommonMojo {
             return
         }
         this.log.info "Policies are ${policyAttachments}"
-        def caller = new PythonCaller()
-        caller.methodCall('connect', [
-                url     : this.adminServerURL,
-                username: this.weblogicUser,
-                password: this.weblogicPassword
-        ])
-        def domainName = ((PyString)caller.cmoGet('name')).toString()
-        caller.methodCall('beginWSMSession')
-        caller.methodCall('commitWSMSession')
-        caller.methodCall('disconnect')
+        def wsmWrapper = new WsmWrapper(this.adminServerURL, this.weblogicUser, this.weblogicPassword)
+        wsmWrapper.close()
     }
 }
