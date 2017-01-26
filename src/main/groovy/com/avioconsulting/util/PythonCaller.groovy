@@ -21,6 +21,10 @@ class PythonCaller {
         return methodCall(name, [], [:])
     }
 
+    def methodCall(String name, List regularArgs) {
+        return methodCall(name, regularArgs, [:])
+    }
+
     def methodCall(String name, Map keywordArgs) {
         return methodCall(name, [], keywordArgs)
     }

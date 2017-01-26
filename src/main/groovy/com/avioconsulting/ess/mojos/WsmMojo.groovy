@@ -1,6 +1,7 @@
 package com.avioconsulting.ess.mojos
 
 import com.avioconsulting.ess.factories.PolicyAttachmentFactory
+import com.avioconsulting.ess.models.Policy
 import com.avioconsulting.ess.wrappers.WsmWrapper
 import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugin.MojoFailureException
@@ -9,6 +10,8 @@ import org.apache.maven.plugins.annotations.Parameter
 
 @Mojo(name = 'attachPolicies')
 class WsmMojo extends CommonMojo {
+    private static final List<Policy> DEFAULT_ESS_POLICIES = [new Policy(name: 'oracle/wsaddr_policy')]
+
     @Parameter(property = 'admin.t3.url', required = true)
     private String adminServerURL
 
@@ -21,8 +24,27 @@ class WsmMojo extends CommonMojo {
             this.log.info 'No policies to load'
             return
         }
-        this.log.info "Policies are ${policyAttachments}"
         def wsmWrapper = new WsmWrapper(this.adminServerURL, this.weblogicUser, this.weblogicPassword)
+        policyAttachments.each { attach ->
+            def subject = attach.policySubject
+            this.log.info "Policy subject ${subject.assembly}"
+            def existing = wsmWrapper.getExistingPolicies(subject)
+            def desiredPolicies = attach.policies
+            // don't want to remove default policy
+            def removePolicies = existing - desiredPolicies - DEFAULT_ESS_POLICIES
+            removePolicies.each { policy ->
+                this.log.info "Detaching policy ${policy}"
+                wsmWrapper.detachPolicy(subject, policy)
+            }
+            def createPolicies = desiredPolicies - existing
+            createPolicies.each { policy ->
+                this.log.info "Attaching policy ${policy}"
+                wsmWrapper.attachPolicy(subject, policy)
+            }
+            if (removePolicies.empty && createPolicies.empty) {
+                this.log.info 'No policy changes required!'
+            }
+        }
         wsmWrapper.close()
     }
 }

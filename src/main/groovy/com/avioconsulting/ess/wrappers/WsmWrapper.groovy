@@ -28,18 +28,34 @@ class WsmWrapper {
         caller.methodCall('disconnect')
     }
 
+    def attachPolicy(PolicySubject policySubject, Policy policy) {
+        selectSubject(policySubject)
+        this.caller.methodCall 'attachWSMPolicy',
+                               [policy.name]
+    }
+
+    def detachPolicy(PolicySubject policySubject, Policy policy) {
+        selectSubject(policySubject)
+        this.caller.methodCall 'detachWSMPolicy',
+                               [policy.name]
+    }
+
     List<Policy> getExistingPolicies(PolicySubject policySubject) {
+        selectSubject(policySubject)
         def caller = this.caller
-        caller.methodCall 'selectWSMPolicySubject',
-                          [
-                                  application: policySubject.getApplication(this.domainName),
-                                  assembly: policySubject.assembly,
-                                  subject: policySubject.subject
-                          ]
         def output = caller.withInterceptedStdout {
             caller.methodCall('displayWSMPolicySet')
         }
         parseExistingPolicies output
+    }
+
+    private selectSubject(PolicySubject policySubject) {
+        this.caller.methodCall 'selectWSMPolicySubject',
+                               [
+                                       application: policySubject.getApplication(this.domainName),
+                                       assembly   : policySubject.assembly,
+                                       subject    : policySubject.subject
+                               ]
     }
 
     static List<Policy> parseExistingPolicies(String output) {
