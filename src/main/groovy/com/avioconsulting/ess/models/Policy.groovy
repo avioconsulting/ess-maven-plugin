@@ -7,8 +7,10 @@ import groovy.transform.InheritConstructors
 @InheritConstructors
 class Policy extends BaseModel {
     String name
+    Map<String, String> overrides
 
     Policy(Map map) {
-        super(map)
+        // overrides are not mandatory
+        super(map << [overrides: (map.overrides ?: [:])])
     }
 }

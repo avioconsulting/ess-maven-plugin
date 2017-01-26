@@ -24,7 +24,10 @@ class WsmMojo extends CommonMojo {
             this.log.info 'No policies to load'
             return
         }
-        def wsmWrapper = new WsmWrapper(this.adminServerURL, this.weblogicUser, this.weblogicPassword)
+        def wsmWrapper = new WsmWrapper(this.adminServerURL,
+                                        this.weblogicUser,
+                                        this.weblogicPassword,
+                                        { msg -> this.log.info msg })
         policyAttachments.each { attach ->
             def subject = attach.policySubject
             this.log.info "Policy subject ${subject.assembly}"
@@ -42,7 +45,7 @@ class WsmMojo extends CommonMojo {
                 wsmWrapper.attachPolicy(subject, policy)
             }
             if (removePolicies.empty && createPolicies.empty) {
-                this.log.info 'No policy changes required!'
+                this.log.info 'No policy additions/deletions required!'
             }
         }
         wsmWrapper.close()
