@@ -13,17 +13,21 @@ class WsmMojo extends CommonMojo {
     private String adminServerURL
 
     void execute() throws MojoExecutionException, MojoFailureException {
+        def reflections = getReflectionsUtility()
+        def policies = reflections.getSubTypesOf(EssClientPolicySubjectFactory).collect { klass ->
+            klass.newInstance().createPolicySubject()
+        }
+        if (!policies.any()) {
+            this.log.info 'No policies to load'
+            return
+        }
+        this.log.info "Policies are ${policies}"
         def caller = new PythonCaller()
         caller.methodCall('connect', [
                 url     : this.adminServerURL,
                 username: this.weblogicUser,
                 password: this.weblogicPassword
         ])
-        def reflections = getReflectionsUtility()
-        reflections.getSubTypesOf(EssClientPolicySubjectFactory).each { klass ->
-            def policy = klass.newInstance().createPolicySubject()
-            println "got policy ${policy}"
-        }
         caller.methodCall('beginWSMSession')
         caller.methodCall('commitWSMSession')
         caller.methodCall('disconnect')
