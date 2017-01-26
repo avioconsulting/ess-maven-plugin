@@ -1,5 +1,7 @@
+import groovy.xml.XmlUtil
+
 group 'com.avioconsulting'
-version '1.0.1'
+version '1.0.2-SNAPSHOT'
 
 configurations {
     provided
@@ -22,12 +24,28 @@ repositories {
     mavenCentral()
 }
 
+def moveDependencyToEnd(Node dependency, Node dependencies) {
+    def individualDeps = dependencies.children()
+    individualDeps.remove(dependency)
+    individualDeps.add(dependency)
+}
+
+def removeExclusions(Node dependencies) {
+    dependencies.children().each { dep ->
+        def exclusions = dep.exclusions
+        if (exclusions) {
+            dep.remove(exclusions)
+        }
+    }
+}
+
 task pluginDescriptor(type: Exec) {
     commandLine 'mvn', '-e', '-B', 'org.apache.maven.plugins:maven-plugin-plugin:3.2:descriptor'
-    def findDependencies = { pomNode ->
-        pomNode.dependencies.dependency.findAll { d ->
+    def dependenciesMavenDescriptorPluginDoesNotLike = ['mdsrt', 'weblogic-maven-plugin']
+    def getDependencyNode = { pomNode, dependencyName ->
+        pomNode.dependencies.dependency.find { d ->
             def value = d.artifactId[0].value()[0]
-            value == 'mdsrt' || value == 'weblogic-maven-plugin'
+            value == dependencyName
         }
     }
 
@@ -44,22 +62,30 @@ task pluginDescriptor(type: Exec) {
         def buildNode = pomNode.appendNode('build')
         buildNode.appendNode('directory', '\${project.basedir}/build')
         buildNode.appendNode('outputDirectory', '\${project.build.directory}/classes/main')
-
-        // descriptor plugin doesn't like scanning this, so exclude it from scope temporarily
-        findDependencies(pomNode).each {wlDependency ->
+        dependenciesMavenDescriptorPluginDoesNotLike.collect { name ->
+            getDependencyNode(pomNode, name)
+        }.each { wlDependency ->
             existingScope = wlDependency.scope[0].value()[0]
             wlDependency.scope[0].value = 'test'
         }
-        groovy.xml.XmlUtil.serialize(pomNode, new FileWriter(pom))
+        XmlUtil.serialize(pomNode, new FileWriter(pom))
     }
     doLast {
         def pom = project.file('pom.xml')
         Node pomNode = new XmlParser().parse(pom)
-        findDependencies(pomNode).each {wlDependency ->
-            // put the scope back
+        dependenciesMavenDescriptorPluginDoesNotLike.collect { name ->
+            getDependencyNode(pomNode, name)
+        }.each { wlDependency ->
             wlDependency.scope[0].value = existingScope
         }
-        groovy.xml.XmlUtil.serialize(pomNode, new FileWriter(pom))
+        def wlDependency = getDependencyNode(pomNode, 'weblogic-maven-plugin')
+        def dependencyList = pomNode.dependencies[0]
+        // the weblogic-maven plugin has to be at the end of the dependency list in the POM
+        moveDependencyToEnd wlDependency, dependencyList
+        // for some reason, the Gradle Maven plugin excludes transitive dependencies on 2 key items
+        // when it generates pom.xml, fix that
+        removeExclusions dependencyList
+        XmlUtil.serialize(pomNode, new FileWriter(pom))
         final pluginDescriptor = new File((File) project.compileGroovy.destinationDir, 'META-INF/maven/plugin.xml')
         assert pluginDescriptor.file, "[$pluginDescriptor.canonicalPath] was not created"
         println "Plugin descriptor file:$pluginDescriptor.canonicalPath is created successfully"
@@ -75,6 +101,9 @@ dependencies {
     compile 'joda-time:joda-time:2.9.6'
     compile 'net.objectlab.kit:datecalc-joda:1.4.0'
     compile 'com.oracle.ess:ess-thin-client:12.2.1-2-0'
+    // WLST/WSM deps
+    runtime 'com.oracle.fmwshare:fmwshare-wlst-dependencies:12.2.1-0-0@pom'
+    runtime 'com.oracle.fmwshare:wsm-wlst-commands:12.2.1-2-0'
     // begin oracle dependencies not declared in ess-thin-client
     compile 'com.oracle.ess:ess-sec:12.2.1-2-0'
     compile 'com.oracle.fmwshare:mdsrt:12.2.1-2-0'
@@ -82,7 +111,7 @@ dependencies {
     runtime 'com.oracle.weblogic:com.bea.core.weblogic.workmanager:12.2.1-2-0'
     // Easiest way to get dependencies for EJB w/ Weblogic
     def wlMaven = 'com.oracle.weblogic:weblogic-maven-plugin:12.2.1-2-0'
-    runtime wlMaven
+    compile wlMaven
     testCompile wlMaven
     // end ess-thin-client deps
     provided 'org.apache.maven.plugin-tools:maven-plugin-annotations:3.5'
