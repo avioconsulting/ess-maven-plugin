@@ -30,15 +30,6 @@ def moveDependencyToEnd(Node dependency, Node dependencies) {
     individualDeps.add(dependency)
 }
 
-def removeExclusions(Node dependencies) {
-    dependencies.children().each { dep ->
-        def exclusions = dep.exclusions
-        if (exclusions) {
-            dep.remove(exclusions)
-        }
-    }
-}
-
 task pluginDescriptor(type: Exec) {
     commandLine 'mvn', '-e', '-B', 'org.apache.maven.plugins:maven-plugin-plugin:3.2:descriptor'
     def dependenciesMavenDescriptorPluginDoesNotLike = ['mdsrt', 'weblogic-maven-plugin']
@@ -82,9 +73,6 @@ task pluginDescriptor(type: Exec) {
         def dependencyList = pomNode.dependencies[0]
         // the weblogic-maven plugin has to be at the end of the dependency list in the POM
         moveDependencyToEnd wlDependency, dependencyList
-        // for some reason, the Gradle Maven plugin excludes transitive dependencies on 2 key items
-        // when it generates pom.xml, fix that
-        removeExclusions dependencyList
         XmlUtil.serialize(pomNode, new FileWriter(pom))
         final pluginDescriptor = new File((File) project.compileGroovy.destinationDir, 'META-INF/maven/plugin.xml')
         assert pluginDescriptor.file, "[$pluginDescriptor.canonicalPath] was not created"
@@ -101,12 +89,128 @@ dependencies {
     compile 'joda-time:joda-time:2.9.6'
     compile 'net.objectlab.kit:datecalc-joda:1.4.0'
     compile 'com.oracle.ess:ess-thin-client:12.2.1-2-0'
-    // WLST/WSM deps
-    runtime 'com.oracle.fmwshare:fmwshare-wlst-dependencies:12.2.1-0-0@pom'
-    runtime 'com.oracle.fmwshare:wsm-wlst-commands:12.2.1-2-0'
+
+    // broke out the com.oracle.fmwshare:fmwshare-wlst-dependencies:12.2.1-0-0 POM since
+    // using BOMs with gradle + maven plugins was weird
+    compile group: 'com.oracle.fmwshare', name: 'commonj.sdo', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'commonj.sdo.backward', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'jrf-wlst-help', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'xmlparserv2_sans_jaxp_services', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'com.oracle.webservices.orawsdl-api', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'share', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'dms', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'ojdl', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'ojdl2', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.ucs.messaging.core', name: 'ums-wlst-commands-impl', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.ucs.messaging.core', name: 'commons', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.ucs.messaging.core', name: 'userprefs-api', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'sslconfigwlst', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'jps-wlst', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'jps-upgrade', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'igfwlsthelp', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'ovdwlsthelp', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'wsm-cli', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'xml', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'oracle.dconfig-infra', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'jmxframework', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'jmxspi', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'org.apache.commons.digester_1.8', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'org.apache.commons.beanutils_1.8.3', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'org.apache.commons.logging_1.2', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'oracle.logging-utils', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'com.oracle.classloader.pcl', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'jps-platform', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'jps-az-sspi', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'auditwlst', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'dmsapp', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'oracle.adf.dconfigbeans', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'adf-share-base', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'adf-share-ca', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'adf-share-support', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'adflogginghandler', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'adfsharembean', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'commons-el', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'jsp-el-api', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'oracle-el', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'adf-share-mbeans-wlst', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'adfscripting', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'mdslcm-client', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'mdsscripting', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'mdsrt', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'xmlef', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'jps-wls-trustprovider', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'jps-wls-idmAuthnProvider', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.oam', name: 'oamap_help', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.oam', name: 'oamAuthnProvider', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'jrf-api', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'com.oracle.http_client.http_client', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'com.oracle.webservices.fmw.ws-config-mbeans-impl', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'wsm-policy-core', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'wsm-resource-core', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'wsm-secpol', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'wsm-seed-policies.1', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'wsm-pmclient', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'wsm-agent-core', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'wsm-pap', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'wsm-pmlib', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'jps-mbeans', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'jps-patching', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'jps-diag', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'jps-api', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'jps-sidm-api', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'jps-unsupported-api', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'jps-ee', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'jps-common', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'jps-internal', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'jps-az-api', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'jps-az-common', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'jps-az-rt', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'jps-az-management', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'jacc-spi', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'jps-audit', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'jps-se', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'osdt_xmlsec', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'ovd', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'identitydirectory', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'identitystore', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'identityutils', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'ldapjclnt11', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.em', name: 'osdt_wss', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'fmw_audit', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'jps-wls', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'oraclepki', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'osdt_cert', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'osdt_core', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'org.glassfish.hk2.hk2-locator', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'javax.inject.javax.inject', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'org.glassfish.javax.el', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'com.bea.core.utils', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'com.bea.core.datasource6', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'org.glassfish.hk2.hk2-utils', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'org.glassfish.hk2.hk2-api', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'javax.validation', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'org.glassfish.hk2.hk2-runlevel', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'org.glassfish.hk2.config-types', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'org.glassfish.hk2.hk2-config', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'org.glassfish.hk2.hk2-core', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'com.fasterxml.classmate', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'org.jboss.logging.jboss-logging', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'org.glassfish.main.common.common-util', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'hibernate.validator', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'com.oracle.weblogic.lifecycle.api', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'com.oracle.weblogic.lifecycle.config', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'com.oracle.weblogic.lifecycle.core', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'com.oracle.weblogic.lifecycle.provisioning.api', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'com.oracle.weblogic.lifecycle.provisioning.wlst', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'com.oracle.jrf.concurrency-utils', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'com.oracle.jrf.mt.tenant.api', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'com.oracle.jrf.mt.tenant.impl', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'com.oracle.jrf.mt.tenant.implse', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.weblogic', name: 'com.oracle.jrf.mt.datasource', version:'[12.2.1,12.2.2)'
+    compile group: 'com.oracle.fmwshare', name: 'jrf_wlsFmw.oracle.fmwshare.pyjar', version:'[12.2.1,12.2.2)'
+    
     // begin oracle dependencies not declared in ess-thin-client
     compile 'com.oracle.ess:ess-sec:12.2.1-2-0'
-    compile 'com.oracle.fmwshare:mdsrt:12.2.1-2-0'
     runtime 'com.oracle.fmwshare:ojdl:12.2.1-2-0'
     runtime 'com.oracle.weblogic:com.bea.core.weblogic.workmanager:12.2.1-2-0'
     // Easiest way to get dependencies for EJB w/ Weblogic
