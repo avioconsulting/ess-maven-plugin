@@ -1,9 +1,13 @@
 package com.avioconsulting.ess.models
 
+import java.lang.reflect.Modifier
+
 class BaseModel {
     BaseModel(Map map) {
         // TODO: Groovy AST, smarter transform for this
-        def allFields = this.class.declaredFields.collect { f -> f.name }
+        def allFields = this.class.declaredFields
+                .findAll { f -> !((f.modifiers & Modifier.FINAL) == Modifier.FINAL) }
+                .collect { f -> f.name }
                 .findAll { f -> !f.startsWith('_') && !f.startsWith('$') && f != 'metaClass' } // hidden fields
         def missingFields = allFields - map.keySet()
         if (missingFields.any()) {
