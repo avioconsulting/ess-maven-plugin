@@ -12,7 +12,6 @@ class EssClientPolicySubject extends PolicySubject {
 
     EssClientPolicySubject(Map map) {
         super(map << [essHostApplicationName: (map.essHostApplicationName ?: PLACEHOLDER_APP_NAME)])
-        validateName(this.name)
     }
 
     String getApplicationNameOnly() {
