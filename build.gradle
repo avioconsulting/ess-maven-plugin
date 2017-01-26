@@ -30,6 +30,11 @@ def moveDependencyToEnd(Node dependency, Node dependencies) {
     individualDeps.add(dependency)
 }
 
+clean {
+    // this is a generated artifact
+    delete 'pom.xml'
+}
+
 task pluginDescriptor(type: Exec) {
     commandLine 'mvn', '-e', '-B', 'org.apache.maven.plugins:maven-plugin-plugin:3.2:descriptor'
     def dependenciesMavenDescriptorPluginDoesNotLike = ['mdsrt', 'weblogic-maven-plugin']
