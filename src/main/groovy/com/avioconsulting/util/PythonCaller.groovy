@@ -3,6 +3,7 @@ package com.avioconsulting.util
 import org.python.core.Py
 import org.python.core.PyDictionary
 import org.python.core.PyFunction
+import org.python.core.PyJavaInstance
 import org.python.core.PyObject
 import weblogic.management.scripting.utils.WLSTInterpreter
 
@@ -22,6 +23,14 @@ class PythonCaller {
 
     def methodCall(String name, Map keywordArgs) {
         return methodCall(name, [], keywordArgs)
+    }
+
+    def cmoGet(String name) {
+        PyJavaInstance cmo = this.interpreter.get 'cmo'
+        assert cmo != null : "WLST cmo does not exist!"
+        String methodName = "get${name.capitalize()}"
+        // for some reason, does not work w/o intern
+        cmo.invoke(methodName.intern())
     }
 
     def methodCall(String name, List regularArgs, Map keywordArgs) {
