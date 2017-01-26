@@ -1,6 +1,6 @@
 package com.avioconsulting.ess.mojos
 
-import com.avioconsulting.ess.factories.EssClientPolicySubjectFactory
+import com.avioconsulting.ess.factories.PolicyAttachmentFactory
 import com.avioconsulting.util.PythonCaller
 import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugin.MojoFailureException
@@ -15,14 +15,14 @@ class WsmMojo extends CommonMojo {
 
     void execute() throws MojoExecutionException, MojoFailureException {
         def reflections = getReflectionsUtility()
-        def policies = reflections.getSubTypesOf(EssClientPolicySubjectFactory).collect { klass ->
-            klass.newInstance().createPolicySubject()
+        def policyAttachments = reflections.getSubTypesOf(PolicyAttachmentFactory).collect { klass ->
+            klass.newInstance().createPolicyAttachment()
         }
-        if (!policies.any()) {
+        if (!policyAttachments.any()) {
             this.log.info 'No policies to load'
             return
         }
-        this.log.info "Policies are ${policies}"
+        this.log.info "Policies are ${policyAttachments}"
         def caller = new PythonCaller()
         caller.methodCall('connect', [
                 url     : this.adminServerURL,
