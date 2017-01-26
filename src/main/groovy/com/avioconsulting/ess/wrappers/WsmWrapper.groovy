@@ -30,14 +30,28 @@ class WsmWrapper {
 
     def attachPolicy(PolicySubject policySubject, Policy policy) {
         selectSubject(policySubject)
-        this.caller.methodCall 'attachWSMPolicy',
-                               [policy.name]
+        def caller = this.caller
+        def policyName = policy.name
+        def output = caller.withInterceptedStdout {
+            caller.methodCall 'attachWSMPolicy',
+                              [policyName]
+        }
+        if (!output.contains("Policy reference \"${ policyName}\" added")) {
+            throw new Exception("Unable to attach policy, error: ${output}")
+        }
     }
 
     def detachPolicy(PolicySubject policySubject, Policy policy) {
         selectSubject(policySubject)
-        this.caller.methodCall 'detachWSMPolicy',
-                               [policy.name]
+        def caller = this.caller
+        def policyName = policy.name
+        def output = caller.withInterceptedStdout {
+            caller.methodCall 'detachWSMPolicy',
+                              [policyName]
+        }
+        if (!output.contains("Policy reference \"${policy.name}\" removed")) {
+            throw new Exception("Unable to detach policy, error: ${output}")
+        }
     }
 
     List<Policy> getExistingPolicies(PolicySubject policySubject) {
