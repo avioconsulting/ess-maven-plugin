@@ -12,7 +12,7 @@ class MetadataServiceWrapper {
     private final URL soaUrl
     private final MetadataService service
     private final MetadataServiceHandle handle
-    private static final String PACKAGE_NAME_WHEN_CREATED_VIA_EM = '/oracle/apps/ess/custom/'
+    public static final String PACKAGE_NAME_WHEN_CREATED_VIA_EM = '/oracle/apps/ess/custom/'
     // should result in everything being returned
     private static final Filter everythingFilter = null
     private final ScheduleMapper scheduleMapper

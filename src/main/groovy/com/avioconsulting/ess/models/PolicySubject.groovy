@@ -5,7 +5,12 @@ import groovy.transform.InheritConstructors
 @InheritConstructors
 abstract class PolicySubject extends BaseModel {
     String getApplication(String domainName) {
-        throw new Exception('NIE')
+        def parts = [
+                'WLS',
+                domainName,
+                this.applicationNameOnly
+        ]
+        '/' + parts.join('/')
     }
 
     abstract String getApplicationNameOnly()

@@ -1,5 +1,6 @@
 package com.avioconsulting.ess.mojos
 
+import com.avioconsulting.ess.models.EssClientPolicySubject
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugins.annotations.Component
 import org.apache.maven.plugins.annotations.Parameter
@@ -18,7 +19,7 @@ abstract class CommonMojo extends AbstractMojo {
     @Parameter(property = 'ess.config.package', required = true)
     private String configurationPackage
 
-    @Parameter(property = 'ess.host.app', defaultValue = 'EssNativeHostingApp')
+    @Parameter(property = 'ess.host.app', defaultValue = EssClientPolicySubject.DEFAULT_ESS_HOST_APP)
     protected String essHostingApp
 
     @Component

@@ -1,28 +1,31 @@
 package com.avioconsulting.ess.models
 
+import com.avioconsulting.ess.mojos.CommonMojo
+import com.avioconsulting.ess.wrappers.MetadataServiceWrapper
 import groovy.transform.Canonical
 import groovy.transform.InheritConstructors
 
 @Canonical
 @InheritConstructors
 class EssClientPolicySubject extends PolicySubject {
-    public static final String PLACEHOLDER_APP_NAME = 'PLACEHOLDER'
+    static final String DEFAULT_ESS_HOST_APP = 'EssNativeHostingApp'
     String essHostApplicationName
     JobDefinition jobDefinition
 
     EssClientPolicySubject(Map map) {
-        super(map << [essHostApplicationName: (map.essHostApplicationName ?: PLACEHOLDER_APP_NAME)])
+        super(map << [essHostApplicationName: (map.essHostApplicationName ?: DEFAULT_ESS_HOST_APP)])
     }
 
     String getApplicationNameOnly() {
-        return null
+        essHostApplicationName
     }
 
     String getAssembly() {
-        return null
+        '%WsmPolicy:/' + MetadataServiceWrapper.PACKAGE_NAME_WHEN_CREATED_VIA_EM + this.jobDefinition.name
     }
 
     String getSubject() {
-        return null
+        // the ones created via EM use this
+        'Job-Invoke()'
     }
 }
