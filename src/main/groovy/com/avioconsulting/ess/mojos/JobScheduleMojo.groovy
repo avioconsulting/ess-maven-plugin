@@ -3,6 +3,7 @@ package com.avioconsulting.ess.mojos
 import com.avioconsulting.ess.factories.JobDefinitionFactory
 import com.avioconsulting.ess.factories.JobRequestFactory
 import com.avioconsulting.ess.factories.ScheduleFactory
+import com.avioconsulting.ess.models.EveryMinuteSchedule
 import com.avioconsulting.ess.models.JobDefinition
 import com.avioconsulting.ess.models.MonthlySchedule
 import com.avioconsulting.ess.models.RecurringSchedule
@@ -166,6 +167,9 @@ class JobScheduleMojo extends CommonMojo {
                 break
             case MonthlySchedule:
                 log.info "--- Days of month: ${schedule.daysOfMonth}"
+                break
+            case EveryMinuteSchedule:
+                log.info "--- Interval     : ${schedule.repeatInterval}"
                 break
             default:
                 throw new Exception(

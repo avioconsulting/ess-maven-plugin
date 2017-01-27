@@ -138,6 +138,15 @@ class SimplyBetter implements JobDefinitionFactory, ScheduleFactory, JobRequestF
 }
 ```
 
+Example using every X minutes:
+```groovy
+new EveryMinuteSchedule(name: 'the_sch_name',
+                        description: 'the description',
+                        displayName: 'the display name',
+                        startDate: new LocalDate(2017, 1, 1),
+                        repeatInterval: 2)
+```
+
 ## WSM
 
 You might have restricted services that ESS is invoking. To attach WSM-policies to the ESS client, implement the `PolicyAttachmentFactory` interface on your class. Then do something like this.
