@@ -1,5 +1,6 @@
 package com.avioconsulting.ess.mappers
 
+import com.avioconsulting.ess.models.EveryMinuteSchedule
 import com.avioconsulting.ess.models.MonthlySchedule
 import com.avioconsulting.ess.models.RecurringSchedule
 import com.avioconsulting.ess.models.WeeklySchedule
@@ -29,8 +30,9 @@ class ScheduleMapper {
     }
 
     private static final Map<RecurringSchedule.Frequency, RecurrenceFields.FREQUENCY> frequencyMapping = [
-            (RecurringSchedule.Frequency.Weekly) : RecurrenceFields.FREQUENCY.WEEKLY,
-            (RecurringSchedule.Frequency.Monthly): RecurrenceFields.FREQUENCY.MONTHLY
+            (RecurringSchedule.Frequency.Weekly)  : RecurrenceFields.FREQUENCY.WEEKLY,
+            (RecurringSchedule.Frequency.Monthly) : RecurrenceFields.FREQUENCY.MONTHLY,
+            (RecurringSchedule.Frequency.Minutely): RecurrenceFields.FREQUENCY.MINUTELY
     ]
 
     private static final Map<DayOfWeek, RecurrenceFields.DAY_OF_WEEK> dayOfWeekMapping = [
@@ -78,7 +80,9 @@ class ScheduleMapper {
         def oracle = new Schedule(ourSchedule.name,
                                   ourSchedule.description,
                                   recurrence)
-        oracle.timeZone = ourSchedule.timeZone.toTimeZone()
+        if (ourSchedule.timeZone) {
+            oracle.timeZone = ourSchedule.timeZone.toTimeZone()
+        }
         oracle.displayName = ourSchedule.displayName
         def exclInclDates = {
             Set<LocalDate> dates -> getExclInclDates(dates, dateTimeThisMachine, this.serverTimeZone)
@@ -91,15 +95,23 @@ class ScheduleMapper {
 
     private Recurrence getRecurrence(RecurringSchedule ourSchedule) {
         def frequency = frequencyMapping[ourSchedule.frequency]
+        Calendar endDate = ourSchedule.endDate ?  ourSchedule.endDate.toDate().toCalendar() : null
         def recurrence = new Recurrence(frequency,
                                         ourSchedule.repeatInterval,
                                         ourSchedule.startDate.toDate().toCalendar(),
-                                        ourSchedule.endDate.toDate().toCalendar())
-        def dateTime = new LocalDate().toDateTime(ourSchedule.timeOfDay, ourSchedule.timeZone)
-        def dateTimeThisMachine = dateTime.toDateTime(this.thisMachineTimeZone)
-        // ESS seems to assume the recurTime is in the time zone of the machine running this (not necessarily server)
-        recurrence.recurTime = getTimeOfDay(dateTimeThisMachine.toLocalTime())
+                                        endDate)
+        if (!(ourSchedule instanceof EveryMinuteSchedule)) {
+            def dateTime = new LocalDate().toDateTime(ourSchedule.timeOfDay, ourSchedule.timeZone)
+            def dateTimeThisMachine = dateTime.toDateTime(this.thisMachineTimeZone)
+            // ESS seems to assume the recurTime is in the time zone of the machine running this (not necessarily server)
+            recurrence.recurTime = getTimeOfDay(dateTimeThisMachine.toLocalTime())
+        }
         recurrence
+    }
+
+    Schedule getOracleSchedule(EveryMinuteSchedule ourSchedule) {
+        Recurrence recurrence = getRecurrence(ourSchedule)
+        completeOracleSchedule(ourSchedule, recurrence)
     }
 
     Schedule getOracleSchedule(WeeklySchedule ourSchedule) {

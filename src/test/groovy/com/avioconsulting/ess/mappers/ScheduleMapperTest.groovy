@@ -1,5 +1,6 @@
 package com.avioconsulting.ess.mappers
 
+import com.avioconsulting.ess.models.EveryMinuteSchedule
 import com.avioconsulting.ess.models.MonthlySchedule
 import com.avioconsulting.ess.models.RecurringSchedule
 import com.avioconsulting.ess.models.WeeklySchedule
@@ -208,18 +209,17 @@ class ScheduleMapperTest {
     @Test
     void getOracleSchedule_Monthly() {
         // arrange
-        def schedule = new MonthlySchedule(
-                name: 'the_sch_name',
-                description: 'the description',
-                displayName: 'the display name',
-                timeZone: DateTimeZone.forID('America/Chicago'),
-                startDate: new LocalDate(2017, 1, 1),
-                endDate: new LocalDate(2017, 2, 1),
-                repeatInterval: 1,
-                daysOfMonth: [1, 10],
-                timeOfDay: new LocalTime(9, 15, 10),
-                includeDates: [new LocalDate(2017, 1, 15), new LocalDate(2017, 1, 16)],
-                excludeDates: [new LocalDate(2017, 1, 17), new LocalDate(2017, 1, 18)])
+        def schedule = new MonthlySchedule(name: 'the_sch_name',
+                                           description: 'the description',
+                                           displayName: 'the display name',
+                                           timeZone: DateTimeZone.forID('America/Chicago'),
+                                           startDate: new LocalDate(2017, 1, 1),
+                                           endDate: new LocalDate(2017, 2, 1),
+                                           repeatInterval: 1,
+                                           daysOfMonth: [1, 10],
+                                           timeOfDay: new LocalTime(9, 15, 10),
+                                           includeDates: [new LocalDate(2017, 1, 15), new LocalDate(2017, 1, 16)],
+                                           excludeDates: [new LocalDate(2017, 1, 17), new LocalDate(2017, 1, 18)])
 
         // act
         def result = new ScheduleMapper(DateTimeZone.forID('America/Chicago'),
@@ -251,5 +251,42 @@ class ScheduleMapperTest {
                    is(equalTo(schedule.endDate.toDate().toCalendar()))
         assertThat recurrence.recurTime.toString(),
                    is(equalTo('9:15:10'))
+    }
+
+    @Test
+    void getOracleSchedule_Minutely() {
+        // arrange
+        def schedule = new EveryMinuteSchedule(name: 'the_sch_name',
+                                               description: 'the description',
+                                               displayName: 'the display name',
+                                               startDate: new LocalDate(2017, 1, 1),
+                                               repeatInterval: 2)
+
+        // act
+        def result = new ScheduleMapper(DateTimeZone.forID('America/Chicago'),
+                                        DateTimeZone.forID('America/Chicago')).getOracleSchedule(schedule)
+
+        // assert
+        assertThat result.name,
+                   is(equalTo('the_sch_name'))
+        assertThat result.description,
+                   is(equalTo('the description'))
+        assertThat result.displayName,
+                   is(equalTo('the display name'))
+        def recurrence = result.recurrence
+        assertThat recurrence.interval,
+                   is(equalTo(2))
+        assertThat recurrence.frequency,
+                   is(equalTo(RecurrenceFields.FREQUENCY.MINUTELY))
+        assertThat fromExplicitDates(result.inclusionDates),
+                   is(equalTo([]))
+        assertThat fromExplicitDates(result.exclusionDates),
+                   is(equalTo([]))
+        assertThat recurrence.startDate,
+                   is(equalTo(schedule.startDate.toDate().toCalendar()))
+        assertThat recurrence.endDate,
+                   is(nullValue())
+        assertThat recurrence.recurTime,
+                   is(nullValue())
     }
 }

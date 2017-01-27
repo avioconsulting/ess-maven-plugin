@@ -7,12 +7,14 @@ import org.joda.time.LocalTime
 abstract class RecurringSchedule extends BaseModel {
     enum Frequency {
         Weekly,
-        Monthly
+        Monthly,
+        Minutely
     }
 
     String name, description, displayName
     DateTimeZone timeZone
 
+    // repeatInterval means every 1 week, 2 weeks, etc.
     int recurrenceCount, repeatInterval
     LocalDate startDate, endDate
     LocalTime timeOfDay
