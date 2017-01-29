@@ -12,6 +12,7 @@ import javax.naming.InitialContext
 import java.util.regex.Pattern
 
 class WsmWrapper {
+    private final int SELECT_RETRIES = 10
     private static final List<String> PROPS_THAT_ARE_NOT_OVERRIDES = ['URI', 'category', 'enabled', 'index']
     private final PythonCaller caller
     private final String domainName
@@ -111,17 +112,35 @@ class WsmWrapper {
         if (this.currentSubject == policySubject) {
             return
         }
-        if (!doSelect(policySubject)) {
-            assert policySubject instanceof EssClientPolicySubject
-            createPolicyAssembly(policySubject)
-            // try and avoid potential transaction issues by starting over
-            caller.methodCall('abortWSMSession')
-            begin()
-            if (!doSelect(policySubject)) {
-                throw new Exception('Could not select WSM subject, tried forcing job assembly policy to be created and still could not select it!')
+        selectWithRetries policySubject
+        this.currentSubject = policySubject
+    }
+
+    def selectWithRetries(PolicySubject policySubject) {
+        [1..SELECT_RETRIES][0].find { index ->
+            try {
+                if (doSelect(policySubject)) {
+                    return true
+                }
+                assert policySubject instanceof EssClientPolicySubject
+                createPolicyAssembly(policySubject)
+                // try and avoid potential transaction issues by starting over
+                caller.methodCall('abortWSMSession')
+                begin()
+                if (!doSelect(policySubject)) {
+                    return false
+                }
+                return true
+            }
+            catch (e) {
+                if (index == SELECT_RETRIES) {
+                    throw new Exception("Tried ${index} times and failed!", e)
+                }
+                this.logger.info "Select WSM subject try ${index} failed, sleeping 2 sec"
+                Thread.sleep(2000)
+                return false
             }
         }
-        this.currentSubject = policySubject
     }
 
     private boolean doSelect(PolicySubject policySubject) {
@@ -137,7 +156,7 @@ class WsmWrapper {
         output.contains('policy subject is selected')
     }
 
-    static void createPolicyAssembly(EssClientPolicySubject subject) {
+    void createPolicyAssembly(EssClientPolicySubject subject) {
         // TODO: Don't hard code this stuff
         Hashtable<String, String> props = [
                 'java.naming.factory.initial'     : 'weblogic.jndi.WLInitialContextFactory',
@@ -158,7 +177,6 @@ class WsmWrapper {
     }
 
     static List<Policy> parseExistingPolicies(String output) {
-        println "paesing existing policies ${output}"
         int flags = Pattern.DOTALL | Pattern.MULTILINE
         def matcher = new Pattern(/.*Policy Reference:\s+(.*)/, flags).matcher(output)
         assert matcher.matches()
