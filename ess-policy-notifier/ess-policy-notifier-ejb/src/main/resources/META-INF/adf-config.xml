@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<adf-config xmlns="http://xmlns.oracle.com/adf/config"
+            xmlns:adf="http://xmlns.oracle.com/adf/config/properties">
+
+    <adf:adf-properties-child xmlns="http://xmlns.oracle.com/adf/config/properties">
+        <adf-property name="adfAppUID" value="ess-policy-notifier"/>
+    </adf:adf-properties-child>
+
+    <adf-mds-config xmlns="http://xmlns.oracle.com/adf/mds/config">
+        <mds-config xmlns="http://xmlns.oracle.com/mds/config">
+            <persistence-config multitenant-capable="true">
+                <metadata-namespaces>
+                    <namespace path="/oracle/apps/ess/custom"
+                               metadata-store-usage="oracle-apps-ess"/>
+                    <namespace path="/oracle/apps/ess"
+                               metadata-store-usage="oracle-apps-ess"
+                               base-tenant-scope="GLOBAL"/>
+                    <namespace path="/oracle/as/ess/core"
+                               metadata-store-usage="ess-core"
+                               base-tenant-scope="GLOBAL"/>
+                    <namespace path="/oracle/as/ess/ext"
+                               metadata-store-usage="ess-ext"
+                               base-tenant-scope="GLOBAL"/>
+                    <!-- This is only for OWSM internal metadata -->
+                    <namespace path="/tenant/oracle/apps/ess"
+                               metadata-store-usage="oracle-apps-ess"/>
+                </metadata-namespaces>
+                <customization-layers>
+                    <customization-layer layer-name="ESS_GLOBAL" tenant-scope="GLOBAL"/>
+                </customization-layers>
+                <metadata-store-usages>
+                    <metadata-store-usage id="ess-core" default-cust-store="false" deploy-target="false">
+                        <metadata-store>
+                            <!--
+                                          <property name="jndi-datasource" value="jdbc/mds-ESS_MDS_DS"/>
+                            -->
+                            <property name="repository-name" value="mds-ESS_MDS_DS"/>
+                            <property name="partition-name" value="essapp-internal-partition"/>
+                        </metadata-store>
+                    </metadata-store-usage>
+                    <metadata-store-usage id="oracle-apps-ess" default-cust-store="false" deploy-target="true">
+                        <metadata-store>
+                            <!--
+                                          <property name="jndi-datasource" value="jdbc/mds-ESS_MDS_DS"/>
+                            -->
+                            <property name="repository-name" value="mds-ESS_MDS_DS"/>
+                            <property name="partition-name" value="essUserMetadata"/>
+                        </metadata-store>
+                    </metadata-store-usage>
+                    <metadata-store-usage id="ess-ext" default-cust-store="false" deploy-target="false">
+                        <metadata-store>
+                            <!--
+                                          <property name="jndi-datasource" value="jdbc/mds-ESS_MDS_DS"/>
+                            -->
+                            <property name="repository-name" value="mds-ESS_MDS_DS"/>
+                            <property name="partition-name" value="ess-partition"/>
+                        </metadata-store>
+                    </metadata-store-usage>
+                </metadata-store-usages>
+            </persistence-config>
+            <cust-config>
+                <match path="/">
+                    <customization-class name="oracle.as.scheduler.metadata.EssCC"/>
+                    <customization-class name="oracle.as.scheduler.metadata.EssTenantCC"/>
+                </match>
+            </cust-config>
+        </mds-config>
+    </adf-mds-config>
+</adf-config>
+

@@ -14,6 +14,10 @@ apply plugin: 'maven'
 sourceSets {
     main {
         compileClasspath += configurations.provided
+
+        java {
+            srcDirs 'ess-policy-notifier/ess-policy-notifier-ejb/src_client/main/java'
+        }
     }
 }
 
@@ -86,7 +90,30 @@ task pluginDescriptor(type: Exec) {
     }
 }
 
-project.compileGroovy.doLast { pluginDescriptor.execute() }
+def subProject = new File(projectDir, 'ess-policy-notifier')
+
+task ejbServerApp(type: Exec) {
+    commandLine 'mvn', "-Dgradle.version=$version", '-f', subProject.absolutePath, 'clean', 'package'
+    doLast {
+        def earFileName = "ess-policy-notifier-${version}.ear"
+        def targetDir = new File(subProject, 'target')
+        def sourceEarFile = new File(targetDir, earFileName)
+        assert sourceEarFile.exists()
+        def earFileDestination = new File(compileGroovy.destinationDir, 'ess-policy-notifier.ear')
+        GFileUtils.copyFile(sourceEarFile, earFileDestination)
+    }
+}
+
+task ejbClean(type: Exec) {
+    commandLine 'mvn', "-Dgradle.version=$version", '-f', subProject.absolutePath, 'clean'
+}
+
+clean.dependsOn(ejbClean)
+
+compileGroovy.doLast {
+    ejbServerApp.execute()
+    pluginDescriptor.execute()
+}
 
 dependencies {
     compile 'commons-io:commons-io:1.3.2'
