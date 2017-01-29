@@ -60,6 +60,7 @@
                         <ejbModule>
                             <groupId>com.avioconsulting.ess</groupId>
                             <artifactId>ess-policy-notifier-ejb</artifactId>
+                            <bundleFileName>ess-policy-notifier-ejb-${version}.jar</bundleFileName>
                         </ejbModule>
                     </modules>
                 </configuration>
