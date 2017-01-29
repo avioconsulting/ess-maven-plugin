@@ -2,6 +2,7 @@ package com.avioconsulting.ess.mojos
 
 import com.avioconsulting.ess.factories.PolicyAttachmentFactory
 import com.avioconsulting.ess.models.Policy
+import com.avioconsulting.ess.wrappers.EssPolicyFixer
 import com.avioconsulting.ess.wrappers.WsmWrapper
 import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugin.MojoFailureException
@@ -24,9 +25,14 @@ class WsmMojo extends CommonMojo {
             this.log.info 'No policies to load'
             return
         }
+        def essFixer = new EssPolicyFixer(this.soaWeblogicUrl,
+                                          this.weblogicUser,
+                                          this.weblogicPassword,
+                                          this.wrapperLogger)
         def wsmWrapper = new WsmWrapper(this.adminServerURL,
                                         this.weblogicUser,
                                         this.weblogicPassword,
+                                        essFixer,
                                         this.wrapperLogger)
         policyAttachments.each { attach ->
             wsmWrapper.begin()

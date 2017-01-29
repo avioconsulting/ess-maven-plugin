@@ -12,6 +12,9 @@ import org.reflections.util.ClasspathHelper
 import org.reflections.util.ConfigurationBuilder
 
 abstract class CommonMojo extends AbstractMojo {
+    @Parameter(property = 'soa.t3.url', required = true)
+    protected String soaWeblogicUrl
+
     @Parameter(property = 'weblogic.user', required = true)
     protected String weblogicUser
 

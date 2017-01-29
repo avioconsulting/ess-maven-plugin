@@ -1,6 +1,5 @@
 package com.avioconsulting.ess.wrappers
 
-import com.avioconsulting.EssPolicyNotifier
 import com.avioconsulting.ess.models.EssClientPolicySubject
 import com.avioconsulting.ess.models.Policy
 import com.avioconsulting.ess.models.PolicySubject
@@ -8,7 +7,6 @@ import com.avioconsulting.util.Logger
 import com.avioconsulting.util.PythonCaller
 import org.python.core.PyString
 
-import javax.naming.InitialContext
 import java.util.regex.Pattern
 
 class WsmWrapper {
@@ -18,11 +16,14 @@ class WsmWrapper {
     private final String domainName
     private PolicySubject currentSubject
     private final Logger logger
+    private final EssPolicyFixer fixer
 
     WsmWrapper(String adminServerUrl,
                String weblogicUser,
                String weblogicPassword,
+               EssPolicyFixer fixer,
                Logger logger) {
+        this.fixer = fixer
         this.logger = logger
         this.currentSubject = null
         def caller = this.caller = new PythonCaller()
@@ -118,28 +119,29 @@ class WsmWrapper {
 
     def selectWithRetries(PolicySubject policySubject) {
         [1..SELECT_RETRIES][0].find { index ->
-            try {
-                if (doSelect(policySubject)) {
-                    return true
-                }
-                assert policySubject instanceof EssClientPolicySubject
-                createPolicyAssembly(policySubject)
-                // try and avoid potential transaction issues by starting over
-                caller.methodCall('abortWSMSession')
-                begin()
-                if (!doSelect(policySubject)) {
-                    return false
-                }
+            if (doSelect(policySubject)) {
                 return true
             }
-            catch (e) {
+            assert policySubject instanceof EssClientPolicySubject
+            // Creating ESS job definitions programmatically does not leave WSM/ESS in a state where
+            // policies can be attached through the traditional WSM WLST calls in this class
+            // The EM GUI does something else, which is probably creating a policy assembly
+            // We call that here and then retry
+            this.fixer.createPolicyAssembly(policySubject.essHostApplicationName,
+                                            MetadataServiceWrapper.PACKAGE_NAME_WHEN_CREATED_VIA_EM,
+                                            policySubject.jobDefinition.name)
+            // try and avoid potential transaction issues by starting over
+            caller.methodCall('abortWSMSession')
+            begin()
+            if (!doSelect(policySubject)) {
                 if (index == SELECT_RETRIES) {
-                    throw new Exception("Tried ${index} times and failed!", e)
+                    throw new Exception("Tried ${index} times and failed!")
                 }
                 this.logger.info "Select WSM subject try ${index} failed, sleeping 2 sec"
                 Thread.sleep(2000)
                 return false
             }
+            return true
         }
     }
 
@@ -156,25 +158,6 @@ class WsmWrapper {
         output.contains('policy subject is selected')
     }
 
-    void createPolicyAssembly(EssClientPolicySubject subject) {
-        // TODO: Don't hard code this stuff
-        Hashtable<String, String> props = [
-                'java.naming.factory.initial'     : 'weblogic.jndi.WLInitialContextFactory',
-                'java.naming.provider.url'        : 't3://localhost:8001',
-                'java.naming.security.principal'  : 'weblogic',
-                'java.naming.security.credentials': 'oracle1234'
-        ]
-        def context = new InitialContext(props)
-        EssPolicyNotifier notifier = context.lookup(
-                'java:global/ess-policy-notifier/EssPolicyNotifierModule/EssPolicyNotifierBean') as EssPolicyNotifier
-        def logMessages = notifier.createPolicyAssembly(subject.essHostApplicationName,
-                                                        MetadataServiceWrapper.PACKAGE_NAME_WHEN_CREATED_VIA_EM,
-                                                        subject.jobDefinition.name)
-        logMessages.each { msg ->
-            this.logger.info "From server: ${msg}"
-        }
-        context.close()
-    }
 
     static List<Policy> parseExistingPolicies(String output) {
         int flags = Pattern.DOTALL | Pattern.MULTILINE

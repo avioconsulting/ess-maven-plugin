@@ -24,9 +24,6 @@ import javax.naming.InitialContext
 class JobScheduleMojo extends CommonMojo {
     private final int DELETE_RETRIES = 10
 
-    @Parameter(property = 'soa.t3.url', required = true)
-    private String soaWeblogicUrl
-
     @Parameter(property = 'soa.deploy.url', required = true)
     private String soaDeployUrl
 
