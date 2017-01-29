@@ -56,22 +56,4 @@ public class EssPolicyNotifierBean implements EssPolicyNotifier {
     private EssPolicyManager getEssPolicyManager(String hostingApp) {
         return EssPolicyManager.getInstanceByLogicalAppName(hostingApp);
     }
-
-    @Override
-    public List<String> deletePolicyAssembly(String hostingApp, String essPackage, String jobName) throws Exception {
-        List<String> logMessages = new ArrayList<>();
-        EssPolicyManager manager = getEssPolicyManager(hostingApp);
-        JobPolicyAssembly existingAssembly = getExistingAssembly(manager, essPackage, jobName);
-        if (existingAssembly != null) {
-            log(logMessages, "Deleting policy assembly");
-            manager.deleteJobPolicyAssembly(essPackage, jobName);
-            MetadataObjectId jobDefinitionId = getJobDefinitionId(essPackage, jobName);
-            log(logMessages, "Deleted, firing delete event!");
-            manager.publishUpdateEvent(hostingApp,
-                    WsmPolicyUpdateEvent.UpdateType.DELETE,
-                    jobDefinitionId);
-            log(logMessages, "Delete event fired!");
-        }
-        return logMessages;
-    }
 }
