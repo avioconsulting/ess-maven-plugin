@@ -3,29 +3,21 @@ package com.avioconsulting.ess.mojos
 import com.avioconsulting.ess.factories.JobDefinitionFactory
 import com.avioconsulting.ess.factories.JobRequestFactory
 import com.avioconsulting.ess.factories.ScheduleFactory
-import com.avioconsulting.ess.models.EveryMinuteSchedule
-import com.avioconsulting.ess.models.JobDefinition
-import com.avioconsulting.ess.models.MonthlySchedule
-import com.avioconsulting.ess.models.RecurringSchedule
-import com.avioconsulting.ess.models.WeeklySchedule
+import com.avioconsulting.ess.models.*
 import com.avioconsulting.ess.wrappers.MetadataServiceWrapper
 import com.avioconsulting.ess.wrappers.RuntimeServiceWrapper
 import oracle.as.scheduler.MetadataService
 import oracle.as.scheduler.MetadataServiceHandle
 import oracle.as.scheduler.RuntimeService
 import oracle.as.scheduler.RuntimeServiceHandle
-import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugin.MojoFailureException
-import org.apache.maven.plugins.annotations.Component
 import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
-import org.apache.maven.project.MavenProject
 import org.joda.time.DateTimeZone
-import org.reflections.Reflections
-import org.reflections.util.ClasspathHelper
-import org.reflections.util.ConfigurationBuilder
+import weblogic.jndi.WLInitialContextFactory
 
+import javax.naming.Context
 import javax.naming.InitialContext
 
 @Mojo(name = 'jobSchedule')
@@ -65,6 +57,7 @@ class JobScheduleMojo extends CommonMojo {
             if (this.cleanFirst) {
                 cleanEverything()
             }
+            this.log
 
             def reflections = getReflectionsUtility()
             List<JobDefinition> newJobDefs = []
@@ -216,10 +209,10 @@ class JobScheduleMojo extends CommonMojo {
 
     private withContext(Closure closure) {
         Hashtable<String, String> props = [
-                'java.naming.factory.initial'     : 'weblogic.jndi.WLInitialContextFactory',
-                'java.naming.provider.url'        : this.soaWeblogicUrl,
-                'java.naming.security.principal'  : this.weblogicUser,
-                'java.naming.security.credentials': this.weblogicPassword
+                (Context.INITIAL_CONTEXT_FACTORY): WLInitialContextFactory.name,
+                (Context.PROVIDER_URL)           : this.soaWeblogicUrl,
+                (Context.SECURITY_PRINCIPAL)     : this.weblogicUser,
+                (Context.SECURITY_CREDENTIALS)   : this.weblogicPassword
         ]
         this.context = new InitialContext(props)
         try {
@@ -256,7 +249,7 @@ class JobScheduleMojo extends CommonMojo {
 
     private withDeployerTransaction(Closure closure) {
         withMetadataService(this.context) { MetadataService service, MetadataServiceHandle handle ->
-            def logger = { String msg -> this.log.info msg }
+            def logger = this.wrapperLogger
             def metadataWrapper = new MetadataServiceWrapper(service,
                                                              handle,
                                                              this.essHostingApp,

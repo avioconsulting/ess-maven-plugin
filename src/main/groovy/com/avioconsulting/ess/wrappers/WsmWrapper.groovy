@@ -1,10 +1,14 @@
 package com.avioconsulting.ess.wrappers
 
+import com.avioconsulting.EssPolicyNotifier
+import com.avioconsulting.ess.models.EssClientPolicySubject
 import com.avioconsulting.ess.models.Policy
 import com.avioconsulting.ess.models.PolicySubject
+import com.avioconsulting.util.Logger
 import com.avioconsulting.util.PythonCaller
 import org.python.core.PyString
 
+import javax.naming.InitialContext
 import java.util.regex.Pattern
 
 class WsmWrapper {
@@ -12,12 +16,12 @@ class WsmWrapper {
     private final PythonCaller caller
     private final String domainName
     private PolicySubject currentSubject
-    private final Closure logger
+    private final Logger logger
 
     WsmWrapper(String adminServerUrl,
                String weblogicUser,
                String weblogicPassword,
-               Closure logger) {
+               Logger logger) {
         this.logger = logger
         this.currentSubject = null
         def caller = this.caller = new PythonCaller()
@@ -27,12 +31,18 @@ class WsmWrapper {
                 password: weblogicPassword
         ])
         this.domainName = ((PyString) caller.cmoGet('name')).toString()
+    }
+
+    def begin() {
         caller.methodCall('beginWSMSession')
+    }
+
+    def commit() {
+        caller.methodCall('commitWSMSession')
     }
 
     def close() {
         def caller = this.caller
-        caller.methodCall('commitWSMSession')
         caller.methodCall('disconnect')
     }
 
@@ -56,7 +66,7 @@ class WsmWrapper {
         def policyName = policy.name
         policy.overrides.each { key, value ->
             def output = caller.withInterceptedStdout {
-                this.logger "For policy ${policyName}, setting override ${key} to ${value}..."
+                this.logger.info "For policy ${policyName}, setting override ${key} to ${value}..."
                 caller.methodCall 'setWSMPolicyOverride',
                                   [policyName,
                                    key,
@@ -101,16 +111,54 @@ class WsmWrapper {
         if (this.currentSubject == policySubject) {
             return
         }
-        this.caller.methodCall 'selectWSMPolicySubject',
-                               [
-                                       application: policySubject.getApplication(this.domainName),
-                                       assembly   : policySubject.assembly,
-                                       subject    : policySubject.subject
-                               ]
+        if (!doSelect(policySubject)) {
+            assert policySubject instanceof EssClientPolicySubject
+            createPolicyAssembly(policySubject)
+            // try and avoid potential transaction issues by starting over
+            caller.methodCall('abortWSMSession')
+            begin()
+            if (!doSelect(policySubject)) {
+                throw new Exception('Could not select WSM subject, tried forcing job assembly policy to be created and still could not select it!')
+            }
+        }
         this.currentSubject = policySubject
     }
 
+    private boolean doSelect(PolicySubject policySubject) {
+        def output = this.caller.withInterceptedStdout {
+            this.caller.methodCall 'selectWSMPolicySubject',
+                                   [
+                                           application: policySubject.getApplication(this.domainName),
+                                           assembly   : policySubject.assembly,
+                                           subject    : policySubject.subject
+                                   ]
+        }
+        this.logger.info "Output from selectWSMPolicySubject: ${output}"
+        output.contains('policy subject is selected')
+    }
+
+    static void createPolicyAssembly(EssClientPolicySubject subject) {
+        // TODO: Don't hard code this stuff
+        Hashtable<String, String> props = [
+                'java.naming.factory.initial'     : 'weblogic.jndi.WLInitialContextFactory',
+                'java.naming.provider.url'        : 't3://localhost:8001',
+                'java.naming.security.principal'  : 'weblogic',
+                'java.naming.security.credentials': 'oracle1234'
+        ]
+        def context = new InitialContext(props)
+        EssPolicyNotifier notifier = context.lookup(
+                'java:global/ess-policy-notifier/EssPolicyNotifierModule/EssPolicyNotifierBean') as EssPolicyNotifier
+        def logMessages = notifier.createPolicyAssembly(subject.essHostApplicationName,
+                                                        MetadataServiceWrapper.PACKAGE_NAME_WHEN_CREATED_VIA_EM,
+                                                        subject.jobDefinition.name)
+        logMessages.each { msg ->
+            this.logger.info "From server: ${msg}"
+        }
+        context.close()
+    }
+
     static List<Policy> parseExistingPolicies(String output) {
+        println "paesing existing policies ${output}"
         int flags = Pattern.DOTALL | Pattern.MULTILINE
         def matcher = new Pattern(/.*Policy Reference:\s+(.*)/, flags).matcher(output)
         assert matcher.matches()

@@ -2,6 +2,7 @@ package com.avioconsulting.ess.wrappers
 
 import com.avioconsulting.ess.models.JobRequest
 import com.avioconsulting.ess.models.JobRequestMetadata
+import com.avioconsulting.util.Logger
 import oracle.as.scheduler.*
 import org.joda.time.DateTime
 
@@ -12,13 +13,13 @@ class RuntimeServiceWrapper {
     // should result in everything being returned
     private static final Filter everythingFilter = null
     private static final long NO_PARENTS = -1
-    private final Closure logger
+    private final Logger logger
     private final boolean holdRequests
 
     RuntimeServiceWrapper(RuntimeService runtimeService,
                           RuntimeServiceHandle handle,
                           MetadataServiceWrapper metadataDeployer,
-                          Closure logger,
+                          Logger logger,
                           boolean holdRequests) {
 
         this.holdRequests = holdRequests
@@ -40,7 +41,7 @@ class RuntimeServiceWrapper {
         existing.findAll {
             details -> details.parent == NO_PARENTS && ![State.CANCELLED, State.CANCELLING].contains(details.state)
         }.each { details ->
-            this.logger "Canceling request ID ${details.requestId}"
+            this.logger.info "Canceling request ID ${details.requestId}"
             this.runtimeService.cancelRequest(this.handle, details.requestId)
         }
     }
@@ -48,7 +49,7 @@ class RuntimeServiceWrapper {
     def deleteAllRequests() {
         def idList = getRequestIds()
         idList.each { id ->
-            this.logger "Deleting request ID ${id}"
+            this.logger.info "Deleting request ID ${id}"
             this.runtimeService.deleteRequest(this.handle, id)
         }
     }
@@ -74,7 +75,7 @@ class RuntimeServiceWrapper {
         def existingRequests = getExistingJobRequests()
         existingRequests.findAll { metadata -> metadata.jobDefinitionName == definition.name }
                 .each { ourRequest ->
-            this.logger "Cancelling job request ID ${ourRequest.id}..."
+            this.logger.info "Cancelling job request ID ${ourRequest.id}..."
             this.runtimeService.cancelRequest(this.handle, ourRequest.id)
         }
     }
@@ -84,7 +85,7 @@ class RuntimeServiceWrapper {
         def existingRequests = getExistingJobRequests(true)
         existingRequests.findAll { metadata -> metadata.jobDefinitionName == definition.name }
                 .each { ourRequest ->
-            this.logger "Deleting job request ID ${ourRequest.id}..."
+            this.logger.info "Deleting job request ID ${ourRequest.id}..."
             this.runtimeService.deleteRequest(this.handle, ourRequest.id)
         }
     }
@@ -100,7 +101,7 @@ class RuntimeServiceWrapper {
     def updateRequest(JobRequestMetadata metadata) {
         // parameters from an updated job definition don't seem to make it in unless we explicitly update
         def jobDef = this.metadataWrapper.getOracleJobDefinition(metadata.jobDefinitionName)
-        this.logger 'Updating parameters on existing job request from job definition...'
+        this.logger.info 'Updating parameters on existing job request from job definition...'
         def runtimeService = this.runtimeService
         def jobRequestId = metadata.id
         jobDef.parameters.all.each { param ->
@@ -109,17 +110,17 @@ class RuntimeServiceWrapper {
                                                   param.name,
                                                   param.value)
         }
-        this.logger "Pointing job request ${jobRequestId} at newly updated schedule..."
+        this.logger.info "Pointing job request ${jobRequestId} at newly updated schedule..."
         // updating schedule creates a new 'pending' job request for the next date
         // this has to happen after we update the parameters from the job definition above
         def scheduleId = MetadataServiceWrapper.getScheduleId(metadata.scheduleName)
         runtimeService.replaceSchedule(this.handle, jobRequestId, scheduleId)
         def currentState = runtimeService.getRequestState(this.handle, jobRequestId)
         if (this.holdRequests && currentState != State.HOLD) {
-            this.logger 'Moving request to hold status'
+            this.logger.info 'Moving request to hold status'
             runtimeService.holdRequest(this.handle, jobRequestId)
         } else if (!this.holdRequests && currentState == State.HOLD) {
-            this.logger 'Releasing request from hold'
+            this.logger.info 'Releasing request from hold'
             runtimeService.releaseRequest(this.handle, jobRequestId)
         }
     }
@@ -143,9 +144,9 @@ class RuntimeServiceWrapper {
                                                      startDate,
                                                      endDate,
                                                      params)
-        this.logger "Request ${requestId} created..."
+        this.logger.info "Request ${requestId} created..."
         if (this.holdRequests) {
-            this.logger 'Putting request in a HOLD state'
+            this.logger.info 'Putting request in a HOLD state'
             runtimeService.holdRequest(this.handle, requestId)
         }
     }

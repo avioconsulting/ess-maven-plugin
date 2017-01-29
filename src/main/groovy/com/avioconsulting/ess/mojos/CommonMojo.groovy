@@ -1,6 +1,8 @@
 package com.avioconsulting.ess.mojos
 
 import com.avioconsulting.ess.models.EssClientPolicySubject
+import com.avioconsulting.util.Logger
+import com.avioconsulting.util.MavenLogger
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugins.annotations.Component
 import org.apache.maven.plugins.annotations.Parameter
@@ -35,5 +37,9 @@ abstract class CommonMojo extends AbstractMojo {
                 .addUrls(this.project.artifact.file.toURL())
                 .forPackages(this.configurationPackage)
         new Reflections(configBuilder)
+    }
+
+    protected Logger getWrapperLogger() {
+        new MavenLogger(this.log)
     }
 }

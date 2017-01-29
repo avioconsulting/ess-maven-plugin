@@ -1,11 +1,15 @@
 package com.avioconsulting.ess.wrappers
 
+import com.avioconsulting.EssPolicyNotifier
 import com.avioconsulting.ess.mappers.JobDefMapper
 import com.avioconsulting.ess.mappers.ScheduleMapper
 import com.avioconsulting.ess.models.JobDefinition
 import com.avioconsulting.ess.models.RecurringSchedule
+import com.avioconsulting.util.Logger
 import oracle.as.scheduler.*
 import org.joda.time.DateTimeZone
+
+import javax.naming.InitialContext
 
 class MetadataServiceWrapper {
     private final String hostingApplication
@@ -16,14 +20,14 @@ class MetadataServiceWrapper {
     // should result in everything being returned
     private static final Filter everythingFilter = null
     private final ScheduleMapper scheduleMapper
-    private final Closure logger
+    private final Logger logger
 
     MetadataServiceWrapper(MetadataService service,
                            MetadataServiceHandle handle,
                            String hostingApplication,
                            URL soaUrl,
                            DateTimeZone serverTimeZone,
-                           Closure logger) {
+                           Logger logger) {
         this.logger = logger
         this.handle = handle
         this.service = service
@@ -58,7 +62,23 @@ class MetadataServiceWrapper {
         def existing = getExistingDefinitions()
         existing.each { definition ->
             def id = getJobDefId definition
-            this.logger "Deleting job definition ${id}"
+            Hashtable<String, String> props = [
+                    'java.naming.factory.initial'     : 'weblogic.jndi.WLInitialContextFactory',
+                    'java.naming.provider.url'        : 't3://localhost:8001',
+                    'java.naming.security.principal'  : 'weblogic',
+                    'java.naming.security.credentials': 'oracle1234'
+            ]
+            def context = new InitialContext(props)
+            EssPolicyNotifier notifier = context.lookup(
+                    'java:global/ess-policy-notifier/EssPolicyNotifierModule/EssPolicyNotifierBean') as EssPolicyNotifier
+            def logMessages = notifier.deletePolicyAssembly(this.hostingApplication,
+                                                            PACKAGE_NAME_WHEN_CREATED_VIA_EM,
+                                                            id.namePart)
+            logMessages.each { msg ->
+                this.logger.info "server: ${msg}"
+            }
+            context.close()
+            this.logger.info "Deleting job definition ${id}"
             this.service.deleteJobDefinition(this.handle, id)
         }
     }
@@ -84,7 +104,7 @@ class MetadataServiceWrapper {
 
     def deleteDefinition(JobDefinition definition) {
         def id = getJobDefId definition.name
-        this.logger "Deleting job definition ${id}"
+        this.logger.info "Deleting job definition ${id}"
         this.service.deleteJobDefinition(this.handle, id)
     }
 
@@ -115,7 +135,7 @@ class MetadataServiceWrapper {
         def existing = getExistingSchedules()
         existing.each { schedule ->
             def id = getScheduleId schedule
-            this.logger "Deleting schedule ${id}..."
+            this.logger.info "Deleting schedule ${id}..."
             this.service.deleteScheduleDefinition(this.handle, id)
         }
     }
