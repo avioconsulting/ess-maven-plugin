@@ -18,20 +18,11 @@ class WsmWrapper {
     private final Logger logger
     private final EssPolicyFixer fixer
 
-    WsmWrapper(String adminServerUrl,
-               String weblogicUser,
-               String weblogicPassword,
-               EssPolicyFixer fixer,
-               Logger logger) {
+    WsmWrapper(PythonCaller caller, EssPolicyFixer fixer, Logger logger) {
         this.fixer = fixer
         this.logger = logger
         this.currentSubject = null
-        def caller = this.caller = new PythonCaller()
-        caller.methodCall('connect', [
-                url     : adminServerUrl,
-                username: weblogicUser,
-                password: weblogicPassword
-        ])
+        this.caller = caller
         this.domainName = ((PyString) caller.cmoGet('name')).toString()
     }
 
@@ -41,11 +32,6 @@ class WsmWrapper {
 
     def commit() {
         caller.methodCall('commitWSMSession')
-    }
-
-    def close() {
-        def caller = this.caller
-        caller.methodCall('disconnect')
     }
 
     def attachPolicy(PolicySubject policySubject, Policy policy) {

@@ -4,6 +4,7 @@ import com.avioconsulting.ess.factories.PolicyAttachmentFactory
 import com.avioconsulting.ess.models.Policy
 import com.avioconsulting.ess.wrappers.EssPolicyFixer
 import com.avioconsulting.ess.wrappers.WsmWrapper
+import com.avioconsulting.util.PythonCaller
 import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugin.MojoFailureException
 import org.apache.maven.plugins.annotations.Mojo
@@ -16,6 +17,9 @@ class WsmMojo extends CommonMojo {
     @Parameter(property = 'admin.t3.url', required = true)
     private String adminServerURL
 
+    @Parameter(property = 'ess.target', defaultValue = 'soa_cluster')
+    private String essTarget
+
     void execute() throws MojoExecutionException, MojoFailureException {
         def reflections = getReflectionsUtility()
         def policyAttachments = reflections.getSubTypesOf(PolicyAttachmentFactory).collect { klass ->
@@ -25,13 +29,19 @@ class WsmMojo extends CommonMojo {
             this.log.info 'No policies to load'
             return
         }
+        def caller = new PythonCaller()
+        caller.methodCall('connect', [
+                url     : this.adminServerURL,
+                username: weblogicUser,
+                password: weblogicPassword
+        ])
         def essFixer = new EssPolicyFixer(this.soaWeblogicUrl,
                                           this.weblogicUser,
                                           this.weblogicPassword,
+                                          this.essTarget,
+                                          caller,
                                           this.wrapperLogger)
-        def wsmWrapper = new WsmWrapper(this.adminServerURL,
-                                        this.weblogicUser,
-                                        this.weblogicPassword,
+        def wsmWrapper = new WsmWrapper(caller,
                                         essFixer,
                                         this.wrapperLogger)
         policyAttachments.each { attach ->
@@ -56,6 +66,6 @@ class WsmMojo extends CommonMojo {
             }
             wsmWrapper.commit()
         }
-        wsmWrapper.close()
+        caller.methodCall('disconnect')
     }
 }

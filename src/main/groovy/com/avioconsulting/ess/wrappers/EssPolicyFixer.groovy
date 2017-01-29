@@ -2,6 +2,10 @@ package com.avioconsulting.ess.wrappers
 
 import com.avioconsulting.EssPolicyNotifier
 import com.avioconsulting.util.Logger
+import com.avioconsulting.util.PythonCaller
+import org.apache.commons.io.IOUtils
+import org.python.core.Py
+import org.python.core.PyObject
 import weblogic.jndi.WLInitialContextFactory
 
 import javax.naming.Context
@@ -12,16 +16,29 @@ class EssPolicyFixer {
     private final String weblogicUser
     private final String weblogicPassword
     private final Logger logger
+    private final PythonCaller pythonCaller
 
     EssPolicyFixer(String soaWeblogicUrl,
                    String weblogicUser,
                    String weblogicPassword,
+                   String essTarget,
+                   PythonCaller pythonCaller,
                    Logger logger) {
 
+        this.pythonCaller = pythonCaller
         this.logger = logger
         this.weblogicPassword = weblogicPassword
         this.weblogicUser = weblogicUser
         this.soaWeblogicUrl = soaWeblogicUrl
+        def props = new Properties()
+        // get version we were built with
+        props.load(getClass().getResourceAsStream('/version.properties'))
+        String version = props.get('version')
+        String appName = "ess-policy-notifier#${version}"
+        if (!isAppDeployed(appName)) {
+            deployApplication(appName,
+                              essTarget)
+        }
     }
 
     def createPolicyAssembly(String hostingApp, String essPackage, String jobName) {
@@ -37,6 +54,8 @@ class EssPolicyFixer {
     }
 
     private withRemote(Closure closure) {
+
+        // TODO: Check if the application is deployed, if it's not, deploy it
         withContext { Context context ->
             EssPolicyNotifier notifier = context.lookup(
                     'java:global/ess-policy-notifier/EssPolicyNotifierModule/EssPolicyNotifierBean') as EssPolicyNotifier
@@ -45,6 +64,41 @@ class EssPolicyFixer {
                 this.logger.info(msg)
             }
         }
+    }
+
+    private deployApplication(String applicationName, String essTarget) {
+        this.logger.info "Deploying ESS fixer app ${applicationName}..."
+        InputStream ear = getClass().getResourceAsStream('/ess-policy-notifier.ear')
+        def tempFile = File.createTempFile('app', '.ear')
+        tempFile.deleteOnExit()
+        def outputStream = new FileOutputStream(tempFile)
+        IOUtils.copy(ear, outputStream)
+        outputStream.flush()
+        outputStream.close()
+        ear.close()
+        this.pythonCaller.methodCall('deploy',
+                                     [
+                                             applicationName,
+                                             tempFile.absolutePath
+                                     ],
+                                     [
+                                             targets: essTarget,
+                                             block  : 'true',
+                                             upload : 'true'
+                                     ])
+    }
+
+    private boolean isAppDeployed(String appName) {
+        def caller = this.pythonCaller
+        caller.methodCall('cd', ['/AppDeployments'])
+        PyObject result = null
+        // don't care about the output
+        caller.withInterceptedStdout {
+            result = caller.methodCall('ls', [returnMap: 'true'])
+        }
+        List deployedApps = Py.tojava(result, ArrayList)
+        caller.methodCall('cd', ['/'])
+        deployedApps.contains(appName)
     }
 
     private withContext(Closure closure) {

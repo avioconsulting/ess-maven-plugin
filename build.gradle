@@ -101,6 +101,10 @@ task ejbServerApp(type: Exec) {
         assert sourceEarFile.exists()
         def earFileDestination = new File(compileGroovy.destinationDir, 'ess-policy-notifier.ear')
         GFileUtils.copyFile(sourceEarFile, earFileDestination)
+        def props = new Properties()
+        props.put('version', version)
+        props.store(new FileOutputStream(new File(compileGroovy.destinationDir, 'version.properties')),
+                    'Read by Maven plugin')
     }
 }
 
@@ -244,7 +248,7 @@ dependencies {
     runtime group: 'com.oracle.weblogic', name: 'com.oracle.jrf.mt.datasource', version: fmw_version
     // weird version
     runtime group: 'com.oracle.fmwshare', name: 'jrf_wlsFmw.oracle.fmwshare.pyjar', version: '12.2.1-0-0'
-    
+
     // begin oracle dependencies not declared in ess-thin-client
     compile group: 'com.oracle.ess', name: 'ess-sec', version: fmw_version
     runtime group: 'com.oracle.weblogic', name: 'com.bea.core.weblogic.workmanager', version: fmw_version
