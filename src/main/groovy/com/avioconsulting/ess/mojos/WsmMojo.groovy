@@ -2,7 +2,7 @@ package com.avioconsulting.ess.mojos
 
 import com.avioconsulting.ess.factories.PolicyAttachmentFactory
 import com.avioconsulting.ess.models.Policy
-import com.avioconsulting.ess.wrappers.EssPolicyFixer
+import com.avioconsulting.util.EssPolicyFixer
 import com.avioconsulting.ess.wrappers.WsmWrapper
 import com.avioconsulting.util.PythonCaller
 import org.apache.maven.plugin.MojoExecutionException

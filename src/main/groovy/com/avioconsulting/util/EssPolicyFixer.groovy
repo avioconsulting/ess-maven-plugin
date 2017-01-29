@@ -1,8 +1,6 @@
-package com.avioconsulting.ess.wrappers
+package com.avioconsulting.util
 
 import com.avioconsulting.EssPolicyNotifier
-import com.avioconsulting.util.Logger
-import com.avioconsulting.util.PythonCaller
 import org.apache.commons.io.IOUtils
 import org.python.core.Py
 import org.python.core.PyObject

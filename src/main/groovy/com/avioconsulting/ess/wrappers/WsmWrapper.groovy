@@ -3,6 +3,7 @@ package com.avioconsulting.ess.wrappers
 import com.avioconsulting.ess.models.EssClientPolicySubject
 import com.avioconsulting.ess.models.Policy
 import com.avioconsulting.ess.models.PolicySubject
+import com.avioconsulting.util.EssPolicyFixer
 import com.avioconsulting.util.Logger
 import com.avioconsulting.util.PythonCaller
 import org.python.core.PyString
@@ -109,6 +110,7 @@ class WsmWrapper {
                 return true
             }
             assert policySubject instanceof EssClientPolicySubject
+            this.logger.info 'Using ESS fixer to correct WSM subject selection...'
             // Creating ESS job definitions programmatically does not leave WSM/ESS in a state where
             // policies can be attached through the traditional WSM WLST calls in this class
             // The EM GUI does something else, which is probably creating a policy assembly
