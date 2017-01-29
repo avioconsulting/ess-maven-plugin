@@ -3,51 +3,29 @@ package com.avioconsulting.ess.mojos
 import com.avioconsulting.ess.factories.JobDefinitionFactory
 import com.avioconsulting.ess.factories.JobRequestFactory
 import com.avioconsulting.ess.factories.ScheduleFactory
-import com.avioconsulting.ess.models.JobDefinition
-import com.avioconsulting.ess.models.MonthlySchedule
-import com.avioconsulting.ess.models.RecurringSchedule
-import com.avioconsulting.ess.models.WeeklySchedule
+import com.avioconsulting.ess.models.*
 import com.avioconsulting.ess.wrappers.MetadataServiceWrapper
 import com.avioconsulting.ess.wrappers.RuntimeServiceWrapper
 import oracle.as.scheduler.MetadataService
 import oracle.as.scheduler.MetadataServiceHandle
 import oracle.as.scheduler.RuntimeService
 import oracle.as.scheduler.RuntimeServiceHandle
-import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugin.MojoFailureException
-import org.apache.maven.plugins.annotations.Component
 import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
-import org.apache.maven.project.MavenProject
 import org.joda.time.DateTimeZone
-import org.reflections.Reflections
-import org.reflections.util.ClasspathHelper
-import org.reflections.util.ConfigurationBuilder
+import weblogic.jndi.WLInitialContextFactory
 
+import javax.naming.Context
 import javax.naming.InitialContext
 
-@Mojo(name = 'deploy')
-class DeployMojo extends AbstractMojo {
+@Mojo(name = 'jobSchedule')
+class JobScheduleMojo extends CommonMojo {
     private final int DELETE_RETRIES = 10
-
-    @Parameter(property = 'weblogic.user', required = true)
-    private String weblogicUser
-
-    @Parameter(property = 'weblogic.password', required = true)
-    private String weblogicPassword
-
-    @Parameter(property = 'soa.t3.url', required = true)
-    private String soaWeblogicUrl
 
     @Parameter(property = 'soa.deploy.url', required = true)
     private String soaDeployUrl
-
-    @Parameter(property = 'ess.config.package', required = true)
-    private String configurationPackage
-
-    @Parameter(property = 'ess.host.app', defaultValue = 'EssNativeHostingApp')
-    private String essHostingApp
 
     // java:comp/env/ess/metadata, the jndiutil context, isnt present as a JNDI name on the EJB
     // so using the long name
@@ -69,9 +47,6 @@ class DeployMojo extends AbstractMojo {
     @Parameter(property = 'ess.hold.requests', defaultValue = 'false')
     private boolean holdRequests
 
-    @Component
-    private MavenProject project
-
     private InitialContext context
 
     void execute() throws MojoExecutionException, MojoFailureException {
@@ -79,6 +54,7 @@ class DeployMojo extends AbstractMojo {
             if (this.cleanFirst) {
                 cleanEverything()
             }
+            this.log
 
             def reflections = getReflectionsUtility()
             List<JobDefinition> newJobDefs = []
@@ -182,6 +158,9 @@ class DeployMojo extends AbstractMojo {
             case MonthlySchedule:
                 log.info "--- Days of month: ${schedule.daysOfMonth}"
                 break
+            case EveryMinuteSchedule:
+                log.info "--- Interval     : ${schedule.repeatInterval}"
+                break
             default:
                 throw new Exception(
                         "Unknown schedule type ${schedule.getClass()}! A developer did not do their job!")
@@ -190,19 +169,6 @@ class DeployMojo extends AbstractMojo {
         log.info "--- End date     : ${schedule.endDate}"
         log.info "--- Exclude dates: ${schedule.excludeDates}"
         log.info "--- Include dates: ${schedule.includeDates}"
-    }
-
-    private getReflectionsUtility() {
-        // artifacts from our project, which is where the configuration is, won't be in the classpath by default
-        ClasspathHelper.contextClassLoader().addURL(this.project.artifact.file.toURL())
-        // used more complex config/construction due to
-        def configBuilder = new ConfigurationBuilder()
-                .addClassLoader(ClasspathHelper.contextClassLoader())
-                .addClassLoader(ClasspathHelper.staticClassLoader())
-                .addUrls(this.project.artifact.file.toURL())
-                .forPackages(this.configurationPackage)
-
-        new Reflections(configBuilder)
     }
 
     def cleanEverything() {
@@ -240,10 +206,10 @@ class DeployMojo extends AbstractMojo {
 
     private withContext(Closure closure) {
         Hashtable<String, String> props = [
-                'java.naming.factory.initial'     : 'weblogic.jndi.WLInitialContextFactory',
-                'java.naming.provider.url'        : this.soaWeblogicUrl,
-                'java.naming.security.principal'  : this.weblogicUser,
-                'java.naming.security.credentials': this.weblogicPassword
+                (Context.INITIAL_CONTEXT_FACTORY): WLInitialContextFactory.name,
+                (Context.PROVIDER_URL)           : this.soaWeblogicUrl,
+                (Context.SECURITY_PRINCIPAL)     : this.weblogicUser,
+                (Context.SECURITY_CREDENTIALS)   : this.weblogicPassword
         ]
         this.context = new InitialContext(props)
         try {
@@ -280,7 +246,7 @@ class DeployMojo extends AbstractMojo {
 
     private withDeployerTransaction(Closure closure) {
         withMetadataService(this.context) { MetadataService service, MetadataServiceHandle handle ->
-            def logger = { String msg -> this.log.info msg }
+            def logger = this.wrapperLogger
             def metadataWrapper = new MetadataServiceWrapper(service,
                                                              handle,
                                                              this.essHostingApp,

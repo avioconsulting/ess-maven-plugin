@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.avioconsulting.ess</groupId>
+    <artifactId>ess-policy-notifier</artifactId>
+    <version>${gradle.version}</version>
+    <packaging>pom</packaging>
+
+    <name>ess-policy-notifier</name>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <modules>
+        <module>ess-policy-notifier-ejb</module>
+    </modules>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.avioconsulting.ess</groupId>
+            <artifactId>ess-policy-notifier-ejb</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <type>ejb</type>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-ear-plugin</artifactId>
+                <version>2.8</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>generate-application-xml</goal>
+                            <goal>ear</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <description>Notifies ESS/WSM about a new job so that the ESS Maven plugin can attach policies to newly created job definitions</description>
+                    <filtering>true</filtering>
+                    <applicationName>ess-policy-notifier</applicationName>
+                    <version>6</version>
+                    <defaultLibBundleDir>lib</defaultLibBundleDir>
+                    <modules>
+                        <ejbModule>
+                            <groupId>com.avioconsulting.ess</groupId>
+                            <artifactId>ess-policy-notifier-ejb</artifactId>
+                            <bundleFileName>ess-policy-notifier-ejb-${version}.jar</bundleFileName>
+                        </ejbModule>
+                    </modules>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.oracle.weblogic</groupId>
+                <artifactId>weblogic-maven-plugin</artifactId>
+                <version>12.2.1-2-0</version>
+                <executions>
+                    <execution>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>redeploy</goal>
+                        </goals>
+                        <configuration>
+                            <name>ess-policy-notifier</name>
+                            <user>weblogic</user>
+                            <password>oracle1234</password>
+                            <targets>soa_cluster</targets>
+                            <source>${project.build.directory}/${project.build.finalName}.ear</source>
+                            <adminurl>t3://localhost:7001</adminurl>
+                            <verbose>true</verbose>
+                            <upload>true</upload>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

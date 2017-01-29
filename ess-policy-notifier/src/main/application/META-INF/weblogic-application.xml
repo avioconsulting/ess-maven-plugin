@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<weblogic-application xmlns="http://xmlns.oracle.com/weblogic/weblogic-application">
+    <application-param>
+        <param-name>jps.policystore.migration</param-name>
+        <param-value>OVERWRITE</param-value>
+    </application-param>
+
+    <application-param>
+        <param-name>jps.policystore.applicationid</param-name>
+        <param-value>EssNativeHostingApp</param-value>
+    </application-param>
+
+    <listener>
+        <listener-class>oracle.security.jps.wls.listeners.JpsApplicationLifecycleListener</listener-class>
+    </listener>
+    <listener>
+        <listener-class>oracle.security.jps.wls.listeners.JpsAppVersionLifecycleListener</listener-class>
+    </listener>
+
+    <listener>
+        <listener-class>oracle.mds.lcm.weblogic.WLLifecycleListener</listener-class>
+    </listener>
+
+    <library-ref>
+        <!-- this lib is required for oracle.applcore.model when applcore tries to create an ApplSession -->
+        <library-name>adf.oracle.domain</library-name>
+    </library-ref>
+
+    <library-ref>
+        <library-name>oracle.ess.client</library-name>
+    </library-ref>
+    <library-ref>
+        <library-name>oracle.ess.thin.client</library-name>
+    </library-ref>
+</weblogic-application>

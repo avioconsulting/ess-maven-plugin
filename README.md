@@ -138,6 +138,30 @@ class SimplyBetter implements JobDefinitionFactory, ScheduleFactory, JobRequestF
 }
 ```
 
+Example using every X minutes:
+```groovy
+new EveryMinuteSchedule(name: 'the_sch_name',
+                        description: 'the description',
+                        displayName: 'the display name',
+                        startDate: new LocalDate(2017, 1, 1),
+                        repeatInterval: 2)
+```
+
+## WSM
+
+You might have restricted services that ESS is invoking. To attach WSM-policies to the ESS client, implement the `PolicyAttachmentFactory` interface on your class. Then do something like this.
+
+```groovy
+PolicyAttachment createPolicyAttachment() {
+    def policySubject = new EssClientPolicySubject(jobDefinition: createJobDefinition())
+    new PolicyAttachment(policySubject: policySubject,
+                         policies: [new Policy(name: 'oracle/wss_username_token_client_policy',
+                                               overrides: ['csf-key': 'foobar.credentials'])])
+  }
+```
+
+Note that the `overrides` parameter to the constructor is optional. It allows you to override policy properties the same way you would in Enterprise Manager.
+
 ## FAQ
 
 ### Is there a way to create all this w/o the requests firing off?

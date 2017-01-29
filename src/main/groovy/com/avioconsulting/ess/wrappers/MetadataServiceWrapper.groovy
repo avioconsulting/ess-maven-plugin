@@ -4,6 +4,7 @@ import com.avioconsulting.ess.mappers.JobDefMapper
 import com.avioconsulting.ess.mappers.ScheduleMapper
 import com.avioconsulting.ess.models.JobDefinition
 import com.avioconsulting.ess.models.RecurringSchedule
+import com.avioconsulting.util.Logger
 import oracle.as.scheduler.*
 import org.joda.time.DateTimeZone
 
@@ -12,18 +13,18 @@ class MetadataServiceWrapper {
     private final URL soaUrl
     private final MetadataService service
     private final MetadataServiceHandle handle
-    private static final String PACKAGE_NAME_WHEN_CREATED_VIA_EM = '/oracle/apps/ess/custom/'
+    public static final String PACKAGE_NAME_WHEN_CREATED_VIA_EM = '/oracle/apps/ess/custom/'
     // should result in everything being returned
     private static final Filter everythingFilter = null
     private final ScheduleMapper scheduleMapper
-    private final Closure logger
+    private final Logger logger
 
     MetadataServiceWrapper(MetadataService service,
                            MetadataServiceHandle handle,
                            String hostingApplication,
                            URL soaUrl,
                            DateTimeZone serverTimeZone,
-                           Closure logger) {
+                           Logger logger) {
         this.logger = logger
         this.handle = handle
         this.service = service
@@ -58,7 +59,7 @@ class MetadataServiceWrapper {
         def existing = getExistingDefinitions()
         existing.each { definition ->
             def id = getJobDefId definition
-            this.logger "Deleting job definition ${id}"
+            this.logger.info "Deleting job definition ${id}"
             this.service.deleteJobDefinition(this.handle, id)
         }
     }
@@ -84,7 +85,7 @@ class MetadataServiceWrapper {
 
     def deleteDefinition(JobDefinition definition) {
         def id = getJobDefId definition.name
-        this.logger "Deleting job definition ${id}"
+        this.logger.info "Deleting job definition ${id}"
         this.service.deleteJobDefinition(this.handle, id)
     }
 
@@ -115,7 +116,7 @@ class MetadataServiceWrapper {
         def existing = getExistingSchedules()
         existing.each { schedule ->
             def id = getScheduleId schedule
-            this.logger "Deleting schedule ${id}..."
+            this.logger.info "Deleting schedule ${id}..."
             this.service.deleteScheduleDefinition(this.handle, id)
         }
     }

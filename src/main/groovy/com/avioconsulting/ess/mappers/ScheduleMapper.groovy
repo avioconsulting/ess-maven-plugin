@@ -95,7 +95,7 @@ class ScheduleMapper {
 
     private Recurrence getRecurrence(RecurringSchedule ourSchedule) {
         def frequency = frequencyMapping[ourSchedule.frequency]
-        Calendar endDate = ourSchedule.endDate ?  ourSchedule.endDate.toDate().toCalendar() : null
+        Calendar endDate = ourSchedule.endDate ? ourSchedule.endDate.toDate().toCalendar() : null
         def recurrence = new Recurrence(frequency,
                                         ourSchedule.repeatInterval,
                                         ourSchedule.startDate.toDate().toCalendar(),

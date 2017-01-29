@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ejb-jar xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
+		  http://java.sun.com/xml/ns/javaee/ejb-jar_3_1.xsd"
+         version="3.1">
+    <module-name>EssPolicyNotifierModule</module-name>
+    <interceptors>
+        <interceptor>
+            <interceptor-class>oracle.security.jps.ee.ejb.JpsInterceptor</interceptor-class>
+            <env-entry>
+                <env-entry-name>application.name</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>EssNativeHostingApp</env-entry-value>
+                <injection-target>
+                    <injection-target-class>oracle.security.jps.ee.ejb.JpsInterceptor</injection-target-class>
+                    <injection-target-name>application_name</injection-target-name>
+                </injection-target>
+            </env-entry>
+        </interceptor>
+        <interceptor>
+            <interceptor-class>oracle.as.scheduler.ejb.EssInterceptor</interceptor-class>
+            <env-entry>
+                <env-entry-name>enable.multistripe</env-entry-name>
+                <env-entry-type>java.lang.Boolean</env-entry-type>
+                <env-entry-value>true</env-entry-value>
+                <injection-target>
+                    <injection-target-class>oracle.as.scheduler.ejb.EssInterceptor</injection-target-class>
+                    <injection-target-name>enable_multistripe_support</injection-target-name>
+                </injection-target>
+            </env-entry>
+        </interceptor>
+    </interceptors>
+
+</ejb-jar>

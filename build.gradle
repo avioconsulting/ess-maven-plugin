@@ -1,5 +1,7 @@
+import groovy.xml.XmlUtil
+
 group 'com.avioconsulting'
-version '1.0.1'
+version '1.0.2'
 
 configurations {
     provided
@@ -12,6 +14,10 @@ apply plugin: 'maven'
 sourceSets {
     main {
         compileClasspath += configurations.provided
+
+        java {
+            srcDirs 'ess-policy-notifier/ess-policy-notifier-ejb/src_client/main/java'
+        }
     }
 }
 
@@ -20,14 +26,27 @@ sourceCompatibility = 1.5
 repositories {
     mavenLocal()
     mavenCentral()
+    jcenter()
+}
+
+def moveDependencyToEnd(Node dependency, Node dependencies) {
+    def individualDeps = dependencies.children()
+    individualDeps.remove(dependency)
+    individualDeps.add(dependency)
+}
+
+clean {
+    // this is a generated artifact
+    delete 'pom.xml'
 }
 
 task pluginDescriptor(type: Exec) {
     commandLine 'mvn', '-e', '-B', 'org.apache.maven.plugins:maven-plugin-plugin:3.2:descriptor'
-    def findDependencies = { pomNode ->
-        pomNode.dependencies.dependency.findAll { d ->
+    def dependenciesMavenDescriptorPluginDoesNotLike = ['mdsrt', 'weblogic-maven-plugin']
+    def getDependencyNode = { pomNode, dependencyName ->
+        pomNode.dependencies.dependency.find { d ->
             def value = d.artifactId[0].value()[0]
-            value == 'mdsrt' || value == 'weblogic-maven-plugin'
+            value == dependencyName
         }
     }
 
@@ -44,29 +63,61 @@ task pluginDescriptor(type: Exec) {
         def buildNode = pomNode.appendNode('build')
         buildNode.appendNode('directory', '\${project.basedir}/build')
         buildNode.appendNode('outputDirectory', '\${project.build.directory}/classes/main')
-
-        // descriptor plugin doesn't like scanning this, so exclude it from scope temporarily
-        findDependencies(pomNode).each {wlDependency ->
+        dependenciesMavenDescriptorPluginDoesNotLike.collect { name ->
+            getDependencyNode(pomNode, name)
+        }.each { wlDependency ->
             existingScope = wlDependency.scope[0].value()[0]
             wlDependency.scope[0].value = 'test'
         }
-        groovy.xml.XmlUtil.serialize(pomNode, new FileWriter(pom))
+        XmlUtil.serialize(pomNode, new FileWriter(pom))
     }
     doLast {
         def pom = project.file('pom.xml')
         Node pomNode = new XmlParser().parse(pom)
-        findDependencies(pomNode).each {wlDependency ->
-            // put the scope back
+        dependenciesMavenDescriptorPluginDoesNotLike.collect { name ->
+            getDependencyNode(pomNode, name)
+        }.each { wlDependency ->
             wlDependency.scope[0].value = existingScope
         }
-        groovy.xml.XmlUtil.serialize(pomNode, new FileWriter(pom))
+        def wlDependency = getDependencyNode(pomNode, 'weblogic-maven-plugin')
+        def dependencyList = pomNode.dependencies[0]
+        // the weblogic-maven plugin has to be at the end of the dependency list in the POM
+        moveDependencyToEnd wlDependency, dependencyList
+        XmlUtil.serialize(pomNode, new FileWriter(pom))
         final pluginDescriptor = new File((File) project.compileGroovy.destinationDir, 'META-INF/maven/plugin.xml')
         assert pluginDescriptor.file, "[$pluginDescriptor.canonicalPath] was not created"
         println "Plugin descriptor file:$pluginDescriptor.canonicalPath is created successfully"
     }
 }
 
-project.compileGroovy.doLast { pluginDescriptor.execute() }
+def subProject = new File(projectDir, 'ess-policy-notifier')
+
+task ejbServerApp(type: Exec) {
+    commandLine 'mvn', "-Dgradle.version=$version", '-f', subProject.absolutePath, 'clean', 'package'
+    doLast {
+        def earFileName = "ess-policy-notifier-${version}.ear"
+        def targetDir = new File(subProject, 'target')
+        def sourceEarFile = new File(targetDir, earFileName)
+        assert sourceEarFile.exists()
+        def earFileDestination = new File(compileGroovy.destinationDir, 'ess-policy-notifier.ear')
+        GFileUtils.copyFile(sourceEarFile, earFileDestination)
+        def props = new Properties()
+        props.put('version', version)
+        props.store(new FileOutputStream(new File(compileGroovy.destinationDir, 'version.properties')),
+                    'Read by Maven plugin')
+    }
+}
+
+task ejbClean(type: Exec) {
+    commandLine 'mvn', "-Dgradle.version=$version", '-f', subProject.absolutePath, 'clean'
+}
+
+clean.dependsOn(ejbClean)
+
+compileGroovy.doLast {
+    ejbServerApp.execute()
+    pluginDescriptor.execute()
+}
 
 dependencies {
     compile 'commons-io:commons-io:1.3.2'
@@ -74,15 +125,136 @@ dependencies {
     compile 'org.apache.maven:maven-plugin-api:3.3.9'
     compile 'joda-time:joda-time:2.9.6'
     compile 'net.objectlab.kit:datecalc-joda:1.4.0'
-    compile 'com.oracle.ess:ess-thin-client:12.2.1-2-0'
+    def fmw_version = '12.2.1-2-0'
+    def ucs_version = '12.2.1.2.0-0-0'
+    compile group: 'com.oracle.ess', name: 'ess-thin-client', version: fmw_version
+
+    // broke out the com.oracle.fmwshare:fmwshare-wlst-dependencies:12.2.1-0-0 POM since
+    // using BOMs with gradle + maven plugins was weird
+    runtime group: 'com.oracle.fmwshare', name: 'commonj.sdo', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'commonj.sdo.backward', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'jrf-wlst-help', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'xmlparserv2_sans_jaxp_services', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'com.oracle.webservices.orawsdl-api', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'share', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'dms', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'ojdl', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'ojdl2', version: fmw_version
+    runtime group: 'com.oracle.ucs.messaging.core', name: 'ums-wlst-commands-impl', version: ucs_version
+    runtime group: 'com.oracle.ucs.messaging.core', name: 'commons', version: ucs_version
+    runtime group: 'com.oracle.ucs.messaging.core', name: 'userprefs-api', version: ucs_version
+    runtime group: 'com.oracle.fmwshare', name: 'sslconfigwlst', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'jps-wlst', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'jps-upgrade', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'igfwlsthelp', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'ovdwlsthelp', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'wsm-cli', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'xml', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'oracle.dconfig-infra', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'jmxframework', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'jmxspi', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'org.apache.commons.digester_1.8', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'org.apache.commons.beanutils_1.8.3', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'org.apache.commons.logging_1.2', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'oracle.logging-utils', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'com.oracle.classloader.pcl', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'jps-platform', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'jps-az-sspi', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'auditwlst', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'dmsapp', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'oracle.adf.dconfigbeans', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'adf-share-base', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'adf-share-ca', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'adf-share-support', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'adflogginghandler', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'adfsharembean', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'commons-el', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'jsp-el-api', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'oracle-el', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'adf-share-mbeans-wlst', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'adfscripting', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'mdslcm-client', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'mdsscripting', version: fmw_version
+    compile group: 'com.oracle.fmwshare', name: 'mdsrt', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'xmlef', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'jps-wls-trustprovider', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'jps-wls-idmAuthnProvider', version: fmw_version
+    runtime group: 'com.oracle.oam', name: 'oamap_help', version: fmw_version
+    runtime group: 'com.oracle.oam', name: 'oamAuthnProvider', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'jrf-api', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'com.oracle.http_client.http_client', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'com.oracle.webservices.fmw.ws-config-mbeans-impl', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'wsm-policy-core', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'wsm-resource-core', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'wsm-secpol', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'wsm-seed-policies.1', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'wsm-pmclient', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'wsm-agent-core', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'wsm-pap', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'wsm-pmlib', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'jps-mbeans', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'jps-patching', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'jps-diag', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'jps-api', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'jps-sidm-api', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'jps-unsupported-api', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'jps-ee', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'jps-common', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'jps-internal', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'jps-az-api', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'jps-az-common', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'jps-az-rt', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'jps-az-management', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'jacc-spi', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'jps-audit', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'jps-se', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'osdt_xmlsec', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'ovd', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'identitydirectory', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'identitystore', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'identityutils', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'ldapjclnt11', version: fmw_version
+    runtime group: 'com.oracle.em', name: 'osdt_wss', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'fmw_audit', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'jps-wls', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'oraclepki', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'osdt_cert', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'osdt_core', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'org.glassfish.hk2.hk2-locator', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'javax.inject.javax.inject', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'org.glassfish.javax.el', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'com.bea.core.utils', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'com.bea.core.datasource6', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'org.glassfish.hk2.hk2-utils', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'org.glassfish.hk2.hk2-api', version: fmw_version
+    runtime group: 'com.oracle.fmwshare', name: 'javax.validation', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'org.glassfish.hk2.hk2-runlevel', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'org.glassfish.hk2.config-types', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'org.glassfish.hk2.hk2-config', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'org.glassfish.hk2.hk2-core', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'com.fasterxml.classmate', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'org.jboss.logging.jboss-logging', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'org.glassfish.main.common.common-util', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'hibernate.validator', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'com.oracle.weblogic.lifecycle.api', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'com.oracle.weblogic.lifecycle.config', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'com.oracle.weblogic.lifecycle.core', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'com.oracle.weblogic.lifecycle.provisioning.api', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'com.oracle.weblogic.lifecycle.provisioning.wlst', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'com.oracle.jrf.concurrency-utils', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'com.oracle.jrf.mt.tenant.api', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'com.oracle.jrf.mt.tenant.impl', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'com.oracle.jrf.mt.tenant.implse', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'com.oracle.jrf.mt.datasource', version: fmw_version
+    // weird version
+    runtime group: 'com.oracle.fmwshare', name: 'jrf_wlsFmw.oracle.fmwshare.pyjar', version: '12.2.1-0-0'
+
     // begin oracle dependencies not declared in ess-thin-client
-    compile 'com.oracle.ess:ess-sec:12.2.1-2-0'
-    compile 'com.oracle.fmwshare:mdsrt:12.2.1-2-0'
-    runtime 'com.oracle.fmwshare:ojdl:12.2.1-2-0'
-    runtime 'com.oracle.weblogic:com.bea.core.weblogic.workmanager:12.2.1-2-0'
+    compile group: 'com.oracle.ess', name: 'ess-sec', version: fmw_version
+    runtime group: 'com.oracle.weblogic', name: 'com.bea.core.weblogic.workmanager', version: fmw_version
     // Easiest way to get dependencies for EJB w/ Weblogic
-    def wlMaven = 'com.oracle.weblogic:weblogic-maven-plugin:12.2.1-2-0'
-    runtime wlMaven
+    def wlMaven = [group: 'com.oracle.weblogic', name: 'weblogic-maven-plugin', version: fmw_version]
+    compile wlMaven
     testCompile wlMaven
     // end ess-thin-client deps
     provided 'org.apache.maven.plugin-tools:maven-plugin-annotations:3.5'
