@@ -48,8 +48,7 @@ public class EssPolicyNotifierBean implements EssPolicyNotifier {
     private JobPolicyAssembly getExistingAssembly(EssPolicyManager manager, String essPackage, String jobName) {
         try {
             return manager.getJobPolicyAssembly(essPackage, jobName);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return null;
         }
     }

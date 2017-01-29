@@ -14,6 +14,8 @@ abstract class PolicySubject extends BaseModel {
     }
 
     abstract String getApplicationNameOnly()
+
     abstract String getAssembly()
+
     abstract String getSubject()
 }

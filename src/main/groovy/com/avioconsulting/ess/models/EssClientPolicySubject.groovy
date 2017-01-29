@@ -1,6 +1,5 @@
 package com.avioconsulting.ess.models
 
-import com.avioconsulting.ess.mojos.CommonMojo
 import com.avioconsulting.ess.wrappers.MetadataServiceWrapper
 import groovy.transform.Canonical
 import groovy.transform.InheritConstructors
