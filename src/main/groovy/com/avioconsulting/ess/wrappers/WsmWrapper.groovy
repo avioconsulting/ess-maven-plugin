@@ -18,8 +18,13 @@ class WsmWrapper {
     private PolicySubject currentSubject
     private final Logger logger
     private final EssPolicyFixer fixer
+    private final String essDeployPackage
 
-    WsmWrapper(PythonCaller caller, EssPolicyFixer fixer, Logger logger) {
+    WsmWrapper(PythonCaller caller,
+               EssPolicyFixer fixer,
+               Logger logger,
+               String essDeployPackage) {
+        this.essDeployPackage = essDeployPackage
         this.fixer = fixer
         this.logger = logger
         this.currentSubject = null
@@ -116,7 +121,7 @@ class WsmWrapper {
             // The EM GUI does something else, which is probably creating a policy assembly
             // We call that here and then retry
             this.fixer.createPolicyAssembly(policySubject.essHostApplicationName,
-                                            MetadataServiceWrapper.PACKAGE_NAME_WHEN_CREATED_VIA_EM,
+                                            this.essDeployPackage,
                                             policySubject.jobDefinition.name)
             // try and avoid potential transaction issues by starting over
             caller.methodCall('abortWSMSession')

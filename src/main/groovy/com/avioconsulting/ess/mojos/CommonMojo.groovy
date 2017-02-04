@@ -1,6 +1,7 @@
 package com.avioconsulting.ess.mojos
 
 import com.avioconsulting.ess.models.EssClientPolicySubject
+import com.avioconsulting.ess.wrappers.MetadataServiceWrapper
 import com.avioconsulting.util.Logger
 import com.avioconsulting.util.MavenLogger
 import org.apache.maven.plugin.AbstractMojo
@@ -26,6 +27,9 @@ abstract class CommonMojo extends AbstractMojo {
 
     @Parameter(property = 'ess.host.app', defaultValue = EssClientPolicySubject.DEFAULT_ESS_HOST_APP)
     protected String essHostingApp
+
+    @Parameter(property = 'ess.deploy.package', defaultValue = MetadataServiceWrapper.DEFAULT_ESS_DEPLOY_PACKAGE)
+    protected String essDeployPackage
 
     @Component
     private MavenProject project

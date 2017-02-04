@@ -9,22 +9,25 @@ import oracle.as.scheduler.*
 import org.joda.time.DateTimeZone
 
 class MetadataServiceWrapper {
+    public static final String DEFAULT_ESS_DEPLOY_PACKAGE = '/oracle/apps/ess/custom/'
     private final String hostingApplication
     private final URL soaUrl
     private final MetadataService service
     private final MetadataServiceHandle handle
-    public static final String PACKAGE_NAME_WHEN_CREATED_VIA_EM = '/oracle/apps/ess/custom/'
     // should result in everything being returned
     private static final Filter everythingFilter = null
     private final ScheduleMapper scheduleMapper
     private final Logger logger
+    private final String essDeployPackage
 
     MetadataServiceWrapper(MetadataService service,
                            MetadataServiceHandle handle,
                            String hostingApplication,
                            URL soaUrl,
                            DateTimeZone serverTimeZone,
-                           Logger logger) {
+                           Logger logger,
+                           String essDeployPackage) {
+        this.essDeployPackage = essDeployPackage
         this.logger = logger
         this.handle = handle
         this.service = service
@@ -49,9 +52,9 @@ class MetadataServiceWrapper {
         result.collect { id -> id.namePart }
     }
 
-    static MetadataObjectId getJobDefId(String name) {
+    MetadataObjectId getJobDefId(String name) {
         MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.JOB_DEFINITION,
-                                                PACKAGE_NAME_WHEN_CREATED_VIA_EM,
+                                                this.essDeployPackage,
                                                 name)
     }
 
@@ -70,7 +73,7 @@ class MetadataServiceWrapper {
                                                      definition)
         this.service.addJobDefinition(this.handle,
                                       oracleDef,
-                                      PACKAGE_NAME_WHEN_CREATED_VIA_EM)
+                                      this.essDeployPackage)
     }
 
     def updateDefinition(JobDefinition definition) {
@@ -106,9 +109,9 @@ class MetadataServiceWrapper {
         return this.service.getScheduleDefinition(this.handle, id, false)
     }
 
-    static MetadataObjectId getScheduleId(String name) {
+    MetadataObjectId getScheduleId(String name) {
         MetadataObjectId.createMetadataObjectId(MetadataObjectId.MetadataObjectType.SCHEDULE_DEFINITION,
-                                                PACKAGE_NAME_WHEN_CREATED_VIA_EM,
+                                                this.essDeployPackage,
                                                 name)
     }
 
@@ -125,7 +128,7 @@ class MetadataServiceWrapper {
         def oracleSchedule = this.scheduleMapper.getOracleSchedule(schedule)
         this.service.addScheduleDefinition(this.handle,
                                            oracleSchedule,
-                                           PACKAGE_NAME_WHEN_CREATED_VIA_EM)
+                                           this.essDeployPackage)
     }
 
     def updateSchedule(RecurringSchedule schedule) {

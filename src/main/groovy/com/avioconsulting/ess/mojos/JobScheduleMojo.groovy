@@ -253,7 +253,8 @@ class JobScheduleMojo extends CommonMojo {
                                                              this.essHostingApp,
                                                              this.soaDeployUrl.toURL(),
                                                              DateTimeZone.forID(this.serverTimeZone),
-                                                             logger)
+                                                             logger,
+                                                             this.essDeployPackage)
             withRuntimeService(this.context) { RuntimeService runSvc, RuntimeServiceHandle runHandle ->
                 def runtimeWrapper = new RuntimeServiceWrapper(runSvc,
                                                                runHandle,

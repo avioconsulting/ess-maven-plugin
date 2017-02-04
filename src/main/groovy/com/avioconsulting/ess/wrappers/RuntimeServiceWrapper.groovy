@@ -100,7 +100,8 @@ class RuntimeServiceWrapper {
 
     def updateRequest(JobRequestMetadata metadata) {
         // parameters from an updated job definition don't seem to make it in unless we explicitly update
-        def jobDef = this.metadataWrapper.getOracleJobDefinition(metadata.jobDefinitionName)
+        def metadataWrapper = this.metadataWrapper
+        def jobDef = metadataWrapper.getOracleJobDefinition(metadata.jobDefinitionName)
         this.logger.info 'Updating parameters on existing job request from job definition...'
         def runtimeService = this.runtimeService
         def jobRequestId = metadata.id
@@ -113,7 +114,7 @@ class RuntimeServiceWrapper {
         this.logger.info "Pointing job request ${jobRequestId} at newly updated schedule..."
         // updating schedule creates a new 'pending' job request for the next date
         // this has to happen after we update the parameters from the job definition above
-        def scheduleId = MetadataServiceWrapper.getScheduleId(metadata.scheduleName)
+        def scheduleId = metadataWrapper.getScheduleId(metadata.scheduleName)
         runtimeService.replaceSchedule(this.handle, jobRequestId, scheduleId)
         def currentState = runtimeService.getRequestState(this.handle, jobRequestId)
         if (this.holdRequests && currentState != State.HOLD) {
@@ -126,8 +127,9 @@ class RuntimeServiceWrapper {
     }
 
     def createRequest(JobRequest request) {
-        def jobDefId = MetadataServiceWrapper.getJobDefId request.jobDefinition.name
-        def schedule = this.metadataWrapper.getOracleSchedule(request.schedule)
+        def metadataWrapper = this.metadataWrapper
+        def jobDefId = metadataWrapper.getJobDefId request.jobDefinition.name
+        def schedule = metadataWrapper.getOracleSchedule(request.schedule)
         // using schedules not triggers
         def trigger = null
         // requests created in EM had today as a start date

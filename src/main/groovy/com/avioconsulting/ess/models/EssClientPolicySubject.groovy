@@ -10,9 +10,11 @@ class EssClientPolicySubject extends PolicySubject {
     static final String DEFAULT_ESS_HOST_APP = 'EssNativeHostingApp'
     String essHostApplicationName
     JobDefinition jobDefinition
+    String essDeployPackage
 
     EssClientPolicySubject(Map map) {
-        super(map << [essHostApplicationName: (map.essHostApplicationName ?: DEFAULT_ESS_HOST_APP)])
+        super(map << [essHostApplicationName: (map.essHostApplicationName ?: DEFAULT_ESS_HOST_APP),
+                      essDeployPackage      : (map.essDeployPackage ?: MetadataServiceWrapper.DEFAULT_ESS_DEPLOY_PACKAGE)])
     }
 
     String getApplicationNameOnly() {
@@ -20,7 +22,7 @@ class EssClientPolicySubject extends PolicySubject {
     }
 
     String getAssembly() {
-        '%WsmPolicy:/' + MetadataServiceWrapper.PACKAGE_NAME_WHEN_CREATED_VIA_EM + this.jobDefinition.name
+        '%WsmPolicy:/' + this.essDeployPackage + this.jobDefinition.name
     }
 
     String getSubject() {

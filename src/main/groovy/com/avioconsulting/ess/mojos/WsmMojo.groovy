@@ -44,7 +44,8 @@ class WsmMojo extends CommonMojo {
                                           this.wrapperLogger)
         def wsmWrapper = new WsmWrapper(caller,
                                         essFixer,
-                                        this.wrapperLogger)
+                                        this.wrapperLogger,
+                                        this.essDeployPackage)
         policyAttachments.each { attach ->
             wsmWrapper.begin()
             def subject = attach.policySubject
