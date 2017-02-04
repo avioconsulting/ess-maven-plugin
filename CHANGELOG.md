@@ -1,3 +1,7 @@
+# 1.0.3
+
+* Allow ESS package to be configurable
+
 # 1.0.2
 
 * Added WSM policy attachment for ESS jobs
