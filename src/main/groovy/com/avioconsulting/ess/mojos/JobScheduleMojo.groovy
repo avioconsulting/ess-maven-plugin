@@ -20,6 +20,7 @@ import weblogic.jndi.WLInitialContextFactory
 import javax.naming.Context
 import javax.naming.InitialContext
 
+@SuppressWarnings("GroovyUnusedDeclaration")
 @Mojo(name = 'jobSchedule')
 class JobScheduleMojo extends CommonMojo {
     private final int DELETE_RETRIES = 10
@@ -222,7 +223,7 @@ class JobScheduleMojo extends CommonMojo {
 
     private withMetadataService(InitialContext context,
                                 Closure closure) {
-        MetadataService svc = context.lookup(this.essMetadataEjbJndi)
+        MetadataService svc = context.lookup(this.essMetadataEjbJndi) as MetadataService
         MetadataServiceHandle handle = svc.open()
         try {
             closure(svc, handle)
@@ -234,7 +235,7 @@ class JobScheduleMojo extends CommonMojo {
 
     private withRuntimeService(InitialContext context,
                                Closure closure) {
-        RuntimeService svc = context.lookup(this.essRuntimeEjbJndi)
+        RuntimeService svc = context.lookup(this.essRuntimeEjbJndi) as RuntimeService
         RuntimeServiceHandle handle = svc.open()
         try {
             closure(svc, handle)

@@ -10,6 +10,7 @@ import org.apache.maven.plugin.MojoFailureException
 import org.apache.maven.plugins.annotations.Mojo
 import org.apache.maven.plugins.annotations.Parameter
 
+@SuppressWarnings("GroovyUnusedDeclaration")
 @Mojo(name = 'attachPolicies')
 class WsmMojo extends CommonMojo {
     private static final List<Policy> DEFAULT_ESS_POLICIES = [new Policy(name: 'oracle/wsaddr_policy')]

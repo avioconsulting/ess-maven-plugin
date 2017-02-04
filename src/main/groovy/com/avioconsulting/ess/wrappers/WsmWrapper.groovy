@@ -67,8 +67,8 @@ class WsmWrapper {
 
     static private parseOverrideOutput(String output, String key) {
         def flags = Pattern.DOTALL | Pattern.MULTILINE
-        if (new Pattern(".*override property \"${key}\".*((added)|(updated)).*",
-                        flags).matcher(output).matches()) {
+        if (Pattern.compile(".*override property \"${key}\".*((added)|(updated)).*",
+                            flags).matcher(output).matches()) {
             return true
         }
         throw new Exception("Unable to set override, error: ${output}")
@@ -149,10 +149,10 @@ class WsmWrapper {
 
     static List<Policy> parseExistingPolicies(String output) {
         int flags = Pattern.DOTALL | Pattern.MULTILINE
-        def matcher = new Pattern(/.*Policy Reference:\s+(.*)/, flags).matcher(output)
+        def matcher = Pattern.compile(/.*Policy Reference:\s+(.*)/, flags).matcher(output)
         assert matcher.matches()
         def uriList = matcher.group(1)
-        def keyValues = new Pattern(/(\S+)=(\S+)/, flags).matcher(uriList).collect { match ->
+        def keyValues = Pattern.compile(/(\S+)=(\S+)/, flags).matcher(uriList).collect { match ->
             [match[1], match[2].replace(',', '')]
         }
         def policies = []
