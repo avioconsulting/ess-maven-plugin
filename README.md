@@ -18,7 +18,7 @@ In your project POM, it's important to set 2 properties:
 
 ### Factories
 
-Create Groovy (or Java) classes in your project that implement the `JobDefinitionFactory`, `ScheduleFactory`, `JobRequestFactory` interfaces from the `com.avioconsulting.ess.factories package` in this plugin. The plugin automatically will find them and use them if you set `ess.config.package` properly in your POM.
+Create Groovy (or Java) classes in your project that implement the `JobDefinitionFactory`, `ScheduleFactory`, `JobRequestFactory` interfaces from the `com.avioconsulting.ess.factories` package in this plugin. The plugin automatically will find them and use them if you set `ess.config.package` properly in your POM.
 
 Example using a weekly schedule:
 
@@ -184,7 +184,11 @@ Not right now. It only adds or updates.
 
 You can force deletion of ALL ESS data by running with the property `ess.clean.everything.first` on the Maven command line. This should only be used in a development environment.
 
-## Limitations
+## Limitations/Wish List
+
+## Server time zone
+
+Given that we already deploy an EJB service on the fly to handle WSM work, another method could be added that retrieves the server time zone automatically and avoids having to supply it as a Maven property.
 
 ## Entropy
 
