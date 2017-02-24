@@ -45,15 +45,7 @@ class EssPolicyFixer {
         }
     }
 
-    def deletePolicyAssembly(String hostingApp, String essPackage, String jobName) {
-        withRemote { EssPolicyNotifier notifier ->
-            notifier.deletePolicyAssembly(hostingApp, essPackage, jobName)
-        }
-    }
-
     private withRemote(Closure closure) {
-
-        // TODO: Check if the application is deployed, if it's not, deploy it
         withContext { Context context ->
             EssPolicyNotifier notifier = context.lookup(
                     'java:global/ess-policy-notifier/EssPolicyNotifierModule/EssPolicyNotifierBean') as EssPolicyNotifier
