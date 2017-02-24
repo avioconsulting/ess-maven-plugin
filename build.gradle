@@ -103,6 +103,7 @@ task ejbServerApp(type: Exec) {
         GFileUtils.copyFile(sourceEarFile, earFileDestination)
         def props = new Properties()
         props.put('version', version)
+        // consumed by EssPolicyFixer when the plugin runs
         props.store(new FileOutputStream(new File(compileGroovy.destinationDir, 'version.properties')),
                     'Read by Maven plugin')
     }
