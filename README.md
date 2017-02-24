@@ -186,6 +186,10 @@ You can force deletion of ALL ESS data by running with the property `ess.clean.e
 
 ## Limitations
 
+## Entropy
+
+The plugin will update existing objects every time it's run. Given that job requests have to be rebuilt for changing job definition parameters, the more job requests out there, the slower this process becomes. It might be nice to have the plugin compare the existing job def params+schedule with the new and only make updates is something has changed.
+
 ## Multi-module/Reactor projects
 
 Most projects will fall into this category. Because of the way the class loaders work, you'll need to ensure that the factory classes (see above) AND any resources you load from the classpath (e.g. request XML files) are uniquely named across projects.
