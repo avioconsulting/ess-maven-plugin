@@ -9,6 +9,10 @@ Functionality:
 
 ## Usage
 
+### Building/installing
+
+Until the plugin is published, run `./gradlew clean install` to install the plugin in your local `.m2` repository.
+
 ### POM Setup
 
 In your project POM, it's important to set 2 properties:
