@@ -199,6 +199,10 @@ Given that we already deploy an EJB service on the fly to handle WSM work, anoth
 
 The plugin will update existing objects every time it's run. Given that job requests have to be rebuilt for changing job definition parameters, the more job requests out there, the slower this process becomes. It might be nice to have the plugin compare the existing job def params+schedule with the new and only make updates is something has changed.
 
+## Archetypes
+
+No archetype is currently available. This might be useful to speed up getting started.
+
 ## Multi-module/Reactor projects
 
 Most projects will fall into this category. Because of the way the class loaders work, you'll need to ensure that the factory classes (see above) AND any resources you load from the classpath (e.g. request XML files) are uniquely named across projects.
