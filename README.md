@@ -11,7 +11,8 @@ Functionality:
 
 ### Building/installing
 
-Until the plugin is published, run `./gradlew clean install` to install the plugin in your local `.m2` repository.
+1. Run the [Oracle Maven Sync Tool](https://docs.oracle.com/middleware/1212/core/MAVEN/config_maven.htm#MAVEN312) to add SOA Suite artifacts to your local Maven repository (or use a private Maven repository where these artifacts are published). This was tested/used with 12.2.1.2.
+2. Until the plugin is published, run `./gradlew clean install` to install the plugin in your local `.m2` repository.
 
 ### POM Setup
 
