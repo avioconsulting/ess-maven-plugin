@@ -1,3 +1,7 @@
+# 1.0.4
+
+Don't fail on service handle cleanup (obscures original exception, just log error)
+
 # 1.0.3
 
 * Allow ESS package to be configurable

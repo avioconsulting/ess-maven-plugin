@@ -229,7 +229,12 @@ class JobScheduleMojo extends CommonMojo {
             closure(svc, handle)
         }
         finally {
-            svc.close(handle)
+            try {
+                svc.close(handle)
+            }
+            catch (e) {
+                this.log.error('Unable to cleanup MetadataServiceHandle!', e)
+            }
         }
     }
 
@@ -241,7 +246,12 @@ class JobScheduleMojo extends CommonMojo {
             closure(svc, handle)
         }
         finally {
-            svc.close(handle)
+            try {
+                svc.close(handle)
+            }
+            catch (e) {
+                this.log.error('Unable to cleanup RuntimeServiceHandle!', e)
+            }
         }
     }
 

@@ -1,7 +1,7 @@
 import groovy.xml.XmlUtil
 
 group 'com.avioconsulting'
-version '1.0.3'
+version '1.0.4'
 
 configurations {
     provided
