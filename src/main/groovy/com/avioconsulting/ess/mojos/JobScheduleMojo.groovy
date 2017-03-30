@@ -51,6 +51,8 @@ class JobScheduleMojo extends CommonMojo {
     private List<JobDefinition> newJobDefs = []
     private List<JobDefinition> updateJobDefs = []
     private List<JobDefinition> canceledJobDefs = []
+    private List<RecurringSchedule> newSchedules = []
+    private List<RecurringSchedule> updatedSchedules = []
 
     void execute() throws MojoExecutionException, MojoFailureException {
         withContext {
@@ -102,10 +104,12 @@ class JobScheduleMojo extends CommonMojo {
                     def schedule = scheduleFactory.createSchedule()
                     logScheduleInfo(schedule)
                     if (existingSchedules.contains(schedule.name)) {
+                        this.updatedSchedules << schedule
                         // update
                         this.log.info 'Updating schedule...'
                         metadataWrapper.updateSchedule(schedule)
                     } else {
+                        this.newSchedules << schedule
                         this.log.info 'Creating schedule...'
                         metadataWrapper.createSchedule(schedule)
                     }

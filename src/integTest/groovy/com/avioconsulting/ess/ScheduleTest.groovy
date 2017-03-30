@@ -17,6 +17,10 @@ class ScheduleTest extends Common {
         mojo.execute()
 
         // assert
-        fail 'write this'
+        def expectedSchedule = new SingleScheduleFactory().createSchedule()
+        assertThat mojo.newSchedules,
+                   is(equalTo([expectedSchedule]))
+        assertThat mojo.updatedSchedules,
+                   is(empty())
     }
 }
