@@ -5,6 +5,8 @@ version '1.0.4'
 
 configurations {
     provided
+    integTestCompile.extendsFrom testCompile
+    integTestRuntime.extendsFrom testRuntime
 }
 
 apply plugin: 'groovy'
@@ -19,6 +21,16 @@ sourceSets {
             srcDirs 'ess-policy-notifier/ess-policy-notifier-ejb/src_client/main/java'
         }
     }
+
+    integTest {
+        compileClasspath += configurations.provided + main.output
+        runtimeClasspath += configurations.provided + main.output
+    }
+}
+
+task integTest(type: Test) {
+    testClassesDir = sourceSets.integTest.output.classesDir
+    classpath = sourceSets.integTest.runtimeClasspath
 }
 
 sourceCompatibility = 1.5
@@ -254,15 +266,11 @@ dependencies {
     compile group: 'com.oracle.ess', name: 'ess-sec', version: fmw_version
     runtime group: 'com.oracle.weblogic', name: 'com.bea.core.weblogic.workmanager', version: fmw_version
     // Easiest way to get dependencies for EJB w/ Weblogic
-    def wlMaven = [group: 'com.oracle.weblogic', name: 'weblogic-maven-plugin', version: fmw_version]
-    compile wlMaven
-    testCompile wlMaven
+    compile group: 'com.oracle.weblogic', name: 'weblogic-maven-plugin', version: fmw_version
     // end ess-thin-client deps
     provided 'org.apache.maven.plugin-tools:maven-plugin-annotations:3.5'
-    def mvnProject = 'org.apache.maven:maven-project:3.0-alpha-2'
     // use explicitly in tests but Maven will provide the dependency at runtime
-    provided mvnProject
-    testCompile mvnProject
+    provided 'org.apache.maven:maven-project:3.0-alpha-2'
     compile 'org.codehaus.groovy:groovy-all:2.4.6'
     testCompile group: 'junit', name: 'junit', version: '4.11'
     testCompile 'org.hamcrest:hamcrest-library:1.3'

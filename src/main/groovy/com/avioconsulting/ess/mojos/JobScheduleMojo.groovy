@@ -28,15 +28,13 @@ class JobScheduleMojo extends CommonMojo {
     @Parameter(property = 'soa.deploy.url', required = true)
     private String soaDeployUrl
 
-    // java:comp/env/ess/metadata, the jndiutil context, isnt present as a JNDI name on the EJB
+    // java:comp/env/ess/metadata, the jndiutil context, isn't present as a JNDI name on the EJB
     // so using the long name
     // JndiUtil.getMetadataServiceEJB(context)
-    @Parameter(property = 'ess.metadata.ejb.jndiName',
-            defaultValue = 'java:global.EssNativeHostingApp.native-ess-ejb.MetadataServiceBean!oracle.as.scheduler.MetadataServiceRemote')
+    @Parameter(property = 'ess.metadata.ejb.jndiName', defaultValue = FieldConstants.ESS_JNDI_EJB_METADATA)
     private String essMetadataEjbJndi
 
-    @Parameter(property = 'ess.runtime.ejb.jndiName',
-            defaultValue = 'java:global.EssNativeHostingApp.native-ess-ejb.RuntimeServiceBean!oracle.as.scheduler.RuntimeServiceRemote')
+    @Parameter(property = 'ess.runtime.ejb.jndiName', defaultValue = FieldConstants.ESS_JNDI_EJB_RUNTIME)
     private String essRuntimeEjbJndi
 
     @Parameter(property = 'ess.server.timezone', required = true)
@@ -50,6 +48,10 @@ class JobScheduleMojo extends CommonMojo {
 
     private InitialContext context
 
+    private List<JobDefinition> newJobDefs = []
+    private List<JobDefinition> updateJobDefs = []
+    private List<JobDefinition> canceledJobDefs = []
+
     void execute() throws MojoExecutionException, MojoFailureException {
         withContext {
             if (this.cleanFirst) {
@@ -58,28 +60,30 @@ class JobScheduleMojo extends CommonMojo {
             this.log
 
             def reflections = getReflectionsUtility()
-            List<JobDefinition> newJobDefs = []
-            List<JobDefinition> updateJobDefs = []
-            List<JobDefinition> canceledJobDefs = []
             withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
                 def existingDefs = metadataWrapper.existingDefinitions
                 reflections.getSubTypesOf(JobDefinitionFactory).each { klass ->
                     def jobDefFactory = klass.newInstance()
                     def jobDef = jobDefFactory.createJobDefinition()
-                    def existingJob = existingDefs.contains(jobDef.name)
-                    if (existingJob && metadataWrapper.hasJobDefinitionTypeChanged(jobDef)) {
+                    def existingJob = existingDefs.contains(jobDef.name) ? metadataWrapper.getJobDefinition(
+                            jobDef.name) : null
+                    if (existingJob && existingJob.jobType != jobDef.jobType) {
                         this.log.info "Job definition ${jobDef.name} type has changed, therefore a new definition/requests must be created since ESS cannot update a job type..."
                         runtimeWrapper.cancelRequestsFor(jobDef)
                         canceledJobDefs << jobDef
                     } else if (existingJob) {
-                        updateJobDefs << jobDef
+                        if (existingJob != jobDef) {
+                            updateJobDefs << jobDef
+                        } else {
+                            this.log.info "Job definition ${jobDef.name} has not changed, skipping update..."
+                        }
                     } else {
                         newJobDefs << jobDef
                     }
                 }
             }
 
-            cancelAndDeleteRequests(canceledJobDefs)
+            deleteRequestsAndDefinitions(canceledJobDefs)
             newJobDefs.addAll(canceledJobDefs)
 
             withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
@@ -131,7 +135,7 @@ class JobScheduleMojo extends CommonMojo {
         }
     }
 
-    private void cancelAndDeleteRequests(List<JobDefinition> canceledJobDefs) {
+    private void deleteRequestsAndDefinitions(List<JobDefinition> canceledJobDefs) {
         // need 2 transactions for cancel/delete job type changes
         deployerWithRetries { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
             canceledJobDefs.each { jobDef ->
