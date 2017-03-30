@@ -2,6 +2,8 @@ package com.avioconsulting.ess
 
 import com.avioconsulting.ess.models.EssClientPolicySubject
 import com.avioconsulting.ess.mojos.CommonMojo
+import com.avioconsulting.ess.mojos.FieldConstants
+import com.avioconsulting.ess.mojos.JobScheduleMojo
 import com.avioconsulting.ess.wrappers.MetadataServiceWrapper
 import org.junit.Before
 
@@ -24,12 +26,26 @@ abstract class Common {
     @Before
     void cleanup() {
         this.factories = [:]
-        def mojo = getMojo()
+        def mojo = getJobScheduleMojo()
         mojo.cleanFirst = true
         mojo.execute()
     }
 
-    abstract CommonMojo getMojo()
+    protected JobScheduleMojo getJobScheduleMojo() {
+        def mojo = new JobScheduleMojo()
+        setCommonMojoFields(mojo)
+        mockDiscoveredFactories(mojo)
+        def url = "http://${hostname}:${port}".toString()
+        setFields mojo,
+                  [
+                          soaDeployUrl      : url,
+                          essMetadataEjbJndi: FieldConstants.ESS_JNDI_EJB_METADATA,
+                          essRuntimeEjbJndi : FieldConstants.ESS_JNDI_EJB_RUNTIME,
+                          // Docker image is currently on this time zone
+                          serverTimeZone    : 'America/Chicago'
+                  ]
+        mojo
+    }
 
     protected void mockDiscoveredFactories(CommonMojo mojo) {
         mojo.metaClass.getSubTypesOf = { Class intf ->
