@@ -11,6 +11,11 @@ class JobDefMapper {
             (com.avioconsulting.ess.models.JobDefinition.Types.AsyncWebService) : 'AsyncWebserviceJobType',
             (com.avioconsulting.ess.models.JobDefinition.Types.OneWayWebService): 'OnewayWebserviceJobType'
     ]
+    private static final String WSDL_PATH_PROP = 'SYS_EXT_wsWsdlUrl'
+    private static final String WSDL_SERVICE = 'SYS_EXT_wsServiceName'
+    private static final String WSDL_PORT = 'SYS_EXT_wsPortName'
+    private static final String WSDL_OPERATION = 'SYS_EXT_wsOperationName'
+    private static final String WSDL_MESSAGE = 'SYS_EXT_invokeMessage'
 
     public static
     final Map<String, com.avioconsulting.ess.models.JobDefinition.Types> reverseTypeMapping = typeMapping.collectEntries {
@@ -36,17 +41,33 @@ class JobDefMapper {
         oracleDefinition
     }
 
-    private static getProperties(URL soaUrl, String hostingApp,
+    static com.avioconsulting.ess.models.JobDefinition getAvioJobDefinition(JobDefinition oracleDefinition) {
+        def avioJobType = reverseTypeMapping[oracleDefinition.jobType.namePart]
+        def paramValue = { String param ->
+            oracleDefinition.parameters.get(param).value as String
+        }
+        new com.avioconsulting.ess.models.JobDefinition(jobType: avioJobType,
+                                                        description: oracleDefinition.description,
+                                                        wsdlPath: paramValue(WSDL_PATH_PROP),
+                                                        service: paramValue(WSDL_SERVICE),
+                                                        port: paramValue(WSDL_PORT),
+                                                        operation: paramValue(WSDL_OPERATION),
+                                                        message: paramValue(WSDL_MESSAGE),
+                                                        name: oracleDefinition.name)
+    }
+
+    private static getProperties(URL soaUrl,
+                                 String hostingApp,
                                  com.avioconsulting.ess.models.JobDefinition jobDefinition) {
-        // these property names come from the web service template in EM
+        // these property keys come from the web service template in EM
         [
                 SYS_effectiveApplication: hostingApp,
                 SYS_EXT_wsWsdlBaseUrl   : soaUrl.toString(),
-                SYS_EXT_wsWsdlUrl       : jobDefinition.wsdlPath,
-                SYS_EXT_wsServiceName   : jobDefinition.service,
-                SYS_EXT_wsPortName      : jobDefinition.port,
-                SYS_EXT_wsOperationName : jobDefinition.operation,
-                SYS_EXT_invokeMessage   : jobDefinition.message,
+                (WSDL_PATH_PROP)        : jobDefinition.wsdlPath,
+                (WSDL_SERVICE)          : jobDefinition.service,
+                (WSDL_PORT)             : jobDefinition.port,
+                (WSDL_OPERATION)        : jobDefinition.operation,
+                (WSDL_MESSAGE)          : jobDefinition.message,
                 SYS_externalJobType     : 'SOA'
         ]
     }
