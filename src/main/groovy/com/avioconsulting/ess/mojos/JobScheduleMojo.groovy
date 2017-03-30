@@ -57,12 +57,10 @@ class JobScheduleMojo extends CommonMojo {
             if (this.cleanFirst) {
                 cleanEverything()
             }
-            this.log
 
-            def reflections = getReflectionsUtility()
             withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
                 def existingDefs = metadataWrapper.existingDefinitions
-                reflections.getSubTypesOf(JobDefinitionFactory).each { klass ->
+                getSubTypesOf(JobDefinitionFactory).each { Class klass ->
                     def jobDefFactory = klass.newInstance()
                     def jobDef = jobDefFactory.createJobDefinition()
                     def existingJob = existingDefs.contains(jobDef.name) ? metadataWrapper.getJobDefinition(
@@ -99,7 +97,7 @@ class JobScheduleMojo extends CommonMojo {
                 this.log.info 'Job definitions complete'
 
                 def existingSchedules = metadataWrapper.existingSchedules
-                reflections.getSubTypesOf(ScheduleFactory).each { klass ->
+                getSubTypesOf(ScheduleFactory).each { Class klass ->
                     def scheduleFactory = klass.newInstance()
                     def schedule = scheduleFactory.createSchedule()
                     logScheduleInfo(schedule)
@@ -117,7 +115,7 @@ class JobScheduleMojo extends CommonMojo {
             // job requests are dependent on schedules+jobs being committed first
             withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
                 def existing = runtimeWrapper.existingJobRequests
-                reflections.getSubTypesOf(JobRequestFactory).each { klass ->
+                getSubTypesOf(JobRequestFactory).each { Class klass ->
                     def jobRequestFactory = klass.newInstance()
                     def jobRequest = jobRequestFactory.createJobRequest()
                     def existingJobRequest = existing.find { data ->

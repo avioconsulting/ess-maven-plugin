@@ -34,16 +34,21 @@ abstract class CommonMojo extends AbstractMojo {
     @Component
     private MavenProject project
 
-    protected getReflectionsUtility() {
-        // artifacts from our project, which is where the configuration is, won't be in the classpath by default
-        ClasspathHelper.contextClassLoader().addURL(this.project.artifact.file.toURL())
-        // used more complex config/construction due to
-        def configBuilder = new ConfigurationBuilder()
-                .addClassLoader(ClasspathHelper.contextClassLoader())
-                .addClassLoader(ClasspathHelper.staticClassLoader())
-                .addUrls(this.project.artifact.file.toURL())
-                .forPackages(this.configurationPackage)
-        new Reflections(configBuilder)
+    private reflections = null
+
+    protected List<Class> getSubTypesOf(Class klass) {
+        if (this.reflections == null) {
+            // artifacts from our project, which is where the configuration is, won't be in the classpath by default
+            ClasspathHelper.contextClassLoader().addURL(this.project.artifact.file.toURL())
+            // used more complex config/construction due to
+            def configBuilder = new ConfigurationBuilder()
+                    .addClassLoader(ClasspathHelper.contextClassLoader())
+                    .addClassLoader(ClasspathHelper.staticClassLoader())
+                    .addUrls(this.project.artifact.file.toURL())
+                    .forPackages(this.configurationPackage)
+            this.reflections = new Reflections(configBuilder)
+        }
+        this.reflections.getSubTypesOf(klass)
     }
 
     protected Logger getWrapperLogger() {

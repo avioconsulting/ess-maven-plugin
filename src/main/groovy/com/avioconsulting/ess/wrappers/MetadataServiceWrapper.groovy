@@ -92,16 +92,10 @@ class MetadataServiceWrapper {
         this.service.deleteJobDefinition(this.handle, id)
     }
 
-    boolean hasJobDefinitionTypeChanged(JobDefinition jobDefinition) {
-        def oracle = getOracleJobDefinition(jobDefinition.name)
-        def existingJobTypeOracle = oracle.jobType.namePart
-        def existingJobTypeUs = JobDefMapper.reverseTypeMapping[existingJobTypeOracle]
-        existingJobTypeUs != jobDefinition.jobType
-    }
-
-    oracle.as.scheduler.JobDefinition getOracleJobDefinition(String name) {
+    JobDefinition getJobDefinition(String name) {
         def id = getJobDefId name
-        return this.service.getJobDefinition(this.handle, id, false)
+        def oracleDefinition = this.service.getJobDefinition(this.handle, id, false)
+        JobDefMapper.getAvioJobDefinition(oracleDefinition)
     }
 
     Schedule getOracleSchedule(RecurringSchedule schedule) {

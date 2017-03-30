@@ -17,7 +17,7 @@ class JobDefMapper {
     private static final String WSDL_OPERATION = 'SYS_EXT_wsOperationName'
     private static final String WSDL_MESSAGE = 'SYS_EXT_invokeMessage'
 
-    public static
+    private static
     final Map<String, com.avioconsulting.ess.models.JobDefinition.Types> reverseTypeMapping = typeMapping.collectEntries {
         ourType, theirType ->
             [(theirType): ourType]

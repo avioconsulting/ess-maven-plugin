@@ -22,8 +22,7 @@ class WsmMojo extends CommonMojo {
     private String essTarget
 
     void execute() throws MojoExecutionException, MojoFailureException {
-        def reflections = getReflectionsUtility()
-        def policyAttachments = reflections.getSubTypesOf(PolicyAttachmentFactory).collect { klass ->
+        def policyAttachments = getSubTypesOf(PolicyAttachmentFactory).collect { Class klass ->
             klass.newInstance().createPolicyAttachment()
         }
         if (!policyAttachments.any()) {

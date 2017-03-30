@@ -3,7 +3,7 @@ package com.avioconsulting.ess
 import com.avioconsulting.ess.factories.JobDefinitionFactory
 import com.avioconsulting.ess.models.JobDefinition
 
-class IntegrationFactory implements JobDefinitionFactory {
+class SingleJobDefFactory implements JobDefinitionFactory {
     JobDefinition createJobDefinition() {
         new JobDefinition(jobType: JobDefinition.Types.SyncWebService,
                           description: 'the description4',
@@ -12,6 +12,6 @@ class IntegrationFactory implements JobDefinitionFactory {
                           port: 'the_port',
                           operation: 'the_operation',
                           message: '<message44/>',
-                          name: 'SimplyBetter')
+                          name: 'FirstJobDef')
     }
 }
