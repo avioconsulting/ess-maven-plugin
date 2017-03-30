@@ -61,7 +61,7 @@ class JobScheduleMojo extends CommonMojo {
             withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
                 def existingDefs = metadataWrapper.existingDefinitions
                 getSubTypesOf(JobDefinitionFactory).each { Class klass ->
-                    def jobDefFactory = klass.newInstance()
+                    def jobDefFactory = klass.newInstance() as JobDefinitionFactory
                     def jobDef = jobDefFactory.createJobDefinition()
                     def existingJob = existingDefs.contains(jobDef.name) ? metadataWrapper.getJobDefinition(
                             jobDef.name) : null
@@ -98,7 +98,7 @@ class JobScheduleMojo extends CommonMojo {
 
                 def existingSchedules = metadataWrapper.existingSchedules
                 getSubTypesOf(ScheduleFactory).each { Class klass ->
-                    def scheduleFactory = klass.newInstance()
+                    def scheduleFactory = klass.newInstance() as ScheduleFactory
                     def schedule = scheduleFactory.createSchedule()
                     logScheduleInfo(schedule)
                     if (existingSchedules.contains(schedule.name)) {
@@ -116,7 +116,7 @@ class JobScheduleMojo extends CommonMojo {
             withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
                 def existing = runtimeWrapper.existingJobRequests
                 getSubTypesOf(JobRequestFactory).each { Class klass ->
-                    def jobRequestFactory = klass.newInstance()
+                    def jobRequestFactory = klass.newInstance() as JobRequestFactory
                     def jobRequest = jobRequestFactory.createJobRequest()
                     def existingJobRequest = existing.find { data ->
                         data.scheduleName == jobRequest.schedule.name && data.jobDefinitionName == jobRequest.jobDefinition.name
