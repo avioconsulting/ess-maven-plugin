@@ -104,10 +104,13 @@ class JobScheduleMojo extends CommonMojo {
                     def schedule = scheduleFactory.createSchedule()
                     logScheduleInfo(schedule)
                     if (existingSchedules.contains(schedule.name)) {
-                        this.updatedSchedules << schedule
-                        // update
-                        this.log.info 'Updating schedule...'
-                        metadataWrapper.updateSchedule(schedule)
+                        if (metadataWrapper.existingScheduleMatches(schedule)) {
+                            this.log.info "Schedule ${schedule.name} has not changed, skipping update..."
+                        } else {
+                            this.updatedSchedules << schedule
+                            this.log.info 'Updating schedule...'
+                            metadataWrapper.updateSchedule(schedule)
+                        }
                     } else {
                         this.newSchedules << schedule
                         this.log.info 'Creating schedule...'

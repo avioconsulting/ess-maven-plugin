@@ -26,6 +26,24 @@ class ScheduleTest extends Common {
     }
 
     @Test
+    void ExistingSchedule_Same_CreatesWithoutError() {
+        // arrange
+        this.factories[ScheduleFactory] = [SingleScheduleFactory]
+        def mojo = getJobScheduleMojo()
+        mojo.execute()
+        mojo = getJobScheduleMojo()
+
+        // act
+        mojo.execute()
+
+        // assert
+        assertThat mojo.updatedSchedules,
+                   is(empty())
+        assertThat mojo.newSchedules,
+                   is(empty())
+    }
+
+    @Test
     void ExistingSchedule_Changed_UpdatesWithoutError() {
         // arrange
         this.factories[ScheduleFactory] = [SingleScheduleFactory]

@@ -98,6 +98,13 @@ class MetadataServiceWrapper {
         JobDefMapper.getAvioJobDefinition(oracleDefinition)
     }
 
+    boolean existingScheduleMatches(RecurringSchedule schedule) {
+        def existingSchedule = getOracleSchedule(schedule)
+        def proposedSchedule = this.scheduleMapper.getOracleSchedule(schedule)
+        // Oracle classes seem to implement equality well, which is simpler than reverse mapping Oracle schedules
+        existingSchedule == proposedSchedule
+    }
+
     Schedule getOracleSchedule(RecurringSchedule schedule) {
         def id = getScheduleId schedule.name
         return this.service.getScheduleDefinition(this.handle, id, false)
