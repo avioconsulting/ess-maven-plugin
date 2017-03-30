@@ -110,6 +110,7 @@ class JobScheduleMojo extends CommonMojo {
                         metadataWrapper.createSchedule(schedule)
                     }
                 }
+                this.log.info 'Schedules complete'
             }
 
             // job requests are dependent on schedules+jobs being committed first
@@ -129,6 +130,7 @@ class JobScheduleMojo extends CommonMojo {
                         runtimeWrapper.createRequest(jobRequest)
                     }
                 }
+                this.log.info 'Job requests complete'
             }
         }
     }
