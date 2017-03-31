@@ -93,9 +93,13 @@ class MetadataServiceWrapper {
     }
 
     JobDefinition getJobDefinition(String name) {
-        def id = getJobDefId name
-        def oracleDefinition = this.service.getJobDefinition(this.handle, id, false)
+        def oracleDefinition = getOracleJobDefinition(name)
         JobDefMapper.getAvioJobDefinition(oracleDefinition)
+    }
+
+    oracle.as.scheduler.JobDefinition getOracleJobDefinition(String name) {
+        def id = getJobDefId name
+        return this.service.getJobDefinition(this.handle, id, false)
     }
 
     boolean existingScheduleMatches(RecurringSchedule schedule) {
