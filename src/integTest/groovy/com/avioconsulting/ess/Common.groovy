@@ -29,6 +29,7 @@ abstract class Common {
         def mojo = getJobScheduleMojo()
         mojo.cleanFirst = true
         mojo.execute()
+        println 'Pre-test clean complete!'
     }
 
     protected JobScheduleMojo getJobScheduleMojo() {
