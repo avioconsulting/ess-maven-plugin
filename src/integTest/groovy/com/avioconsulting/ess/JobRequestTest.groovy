@@ -35,6 +35,7 @@ class JobRequestTest extends Common {
         mojo.execute()
 
         // assert
+        def expectedJobRequest = DummyFactory.returnThis
         assertThat mojo.newJobDefs,
                    is(equalTo([expectedJobDef]))
         assertThat mojo.updateJobDefs,
@@ -45,6 +46,9 @@ class JobRequestTest extends Common {
                    is(equalTo([expectedSchedule]))
         assertThat mojo.updatedSchedules,
                    is(empty())
-        fail 'write this'
+        assertThat mojo.newJobRequests,
+                   is(equalTo([expectedJobRequest]))
+        assertThat mojo.updatedJobRequests,
+                   is(empty())
     }
 }

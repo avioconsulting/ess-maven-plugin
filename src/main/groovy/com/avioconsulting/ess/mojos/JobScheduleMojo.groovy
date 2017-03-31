@@ -53,6 +53,8 @@ class JobScheduleMojo extends CommonMojo {
     private List<JobDefinition> canceledJobDefs = []
     private List<RecurringSchedule> newSchedules = []
     private List<RecurringSchedule> updatedSchedules = []
+    private List<JobRequest> newJobRequests = []
+    private List<JobRequest> updatedJobRequests = []
 
     void execute() throws MojoExecutionException, MojoFailureException {
         withContext {
@@ -130,9 +132,11 @@ class JobScheduleMojo extends CommonMojo {
                         data.scheduleName == jobRequest.schedule.name && data.jobDefinitionName == jobRequest.jobDefinition.name
                     }
                     if (existingJobRequest) {
+                        this.updatedJobRequests << jobRequest
                         this.log.info "Updating job request ${jobRequest.submissionNotes}..."
                         runtimeWrapper.updateRequest(existingJobRequest)
                     } else {
+                        this.newJobRequests << jobRequest
                         this.log.info "Creating job request ${jobRequest.submissionNotes}..."
                         runtimeWrapper.createRequest(jobRequest)
                     }
