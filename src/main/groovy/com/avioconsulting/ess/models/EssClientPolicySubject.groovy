@@ -7,7 +7,7 @@ import groovy.transform.InheritConstructors
 @Canonical
 @InheritConstructors
 class EssClientPolicySubject extends PolicySubject {
-    static final String DEFAULT_ESS_HOST_APP = 'EssNativeHostingApp'
+    public static final String DEFAULT_ESS_HOST_APP = 'EssNativeHostingApp'
     String essHostApplicationName
     JobDefinition jobDefinition
     String essDeployPackage
