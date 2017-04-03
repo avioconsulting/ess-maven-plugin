@@ -36,7 +36,7 @@ abstract class CommonMojo extends AbstractMojo {
 
     private reflections = null
 
-    protected List<Class> getSubTypesOf(Class klass) {
+    protected Set<Class> getSubTypesOf(Class klass) {
         if (this.reflections == null) {
             // artifacts from our project, which is where the configuration is, won't be in the classpath by default
             ClasspathHelper.contextClassLoader().addURL(this.project.artifact.file.toURL())
