@@ -21,10 +21,16 @@ Goals:
 
 ### POM Setup
 
-In your project POM, it's important to set 2 properties:
+In your project POM, it's important to set the following properties:
 
-1. The `ess.server.timezone` POM property (or `serverTimeZone` plugin/config) needs to match the time zone of the server you deploy to. This is due to observed quirks with deploying to ESS
-2. The `ess.config.package` POM property (or `configurationPackage` plugin/config) should be set to the Java/Groovy package that your expose your factories (see below)
+1. The `ess.config.package` (or `configurationPackage` plugin/config) should be set to the Java/Groovy package that your expose your factories (see below)
+2. `soa.t3.url` - The T3 of the URL where ESS is running (we usually run it on the SOA cluster, e.g. `t3://localhost:8001`)
+3. `weblogic.user`
+4. `weblogic.password`
+5. `admin.t3.url` - AdminServer's T3 URL ( e.g. `t3://localhost:7001`)
+6. `soa.deploy.url` - base URL where SOA servers you will trigger with ESS jobs (e.g. `https://localhost:8001`)
+7. The `ess.server.timezone` POM property (or `serverTimeZone` plugin/config) needs to match the time zone of the server you deploy to. This is due to observed quirks with deploying to ESS
+8. If ESS is not deployed on `soa_cluster`, then set the `ess.target` property to the name of the cluster.
 
 ### Factories
 
@@ -199,10 +205,6 @@ You can force deletion of ALL ESS data by running with the property `ess.clean.e
 ## Server time zone
 
 Given that we already deploy an EJB service on the fly to handle WSM work, another method could be added that retrieves the server time zone automatically and avoids having to supply it as a Maven property.
-
-## Entropy
-
-The plugin will update existing objects every time it's run. Given that job requests have to be rebuilt for changing job definition parameters, the more job requests out there, the slower this process becomes. It might be nice to have the plugin compare the existing job def params+schedule with the new and only make updates is something has changed.
 
 ## Archetypes
 

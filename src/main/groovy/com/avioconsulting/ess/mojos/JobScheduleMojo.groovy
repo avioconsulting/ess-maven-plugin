@@ -28,15 +28,13 @@ class JobScheduleMojo extends CommonMojo {
     @Parameter(property = 'soa.deploy.url', required = true)
     private String soaDeployUrl
 
-    // java:comp/env/ess/metadata, the jndiutil context, isnt present as a JNDI name on the EJB
+    // java:comp/env/ess/metadata, the jndiutil context, isn't present as a JNDI name on the EJB
     // so using the long name
     // JndiUtil.getMetadataServiceEJB(context)
-    @Parameter(property = 'ess.metadata.ejb.jndiName',
-            defaultValue = 'java:global.EssNativeHostingApp.native-ess-ejb.MetadataServiceBean!oracle.as.scheduler.MetadataServiceRemote')
+    @Parameter(property = 'ess.metadata.ejb.jndiName', defaultValue = FieldConstants.ESS_JNDI_EJB_METADATA)
     private String essMetadataEjbJndi
 
-    @Parameter(property = 'ess.runtime.ejb.jndiName',
-            defaultValue = 'java:global.EssNativeHostingApp.native-ess-ejb.RuntimeServiceBean!oracle.as.scheduler.RuntimeServiceRemote')
+    @Parameter(property = 'ess.runtime.ejb.jndiName', defaultValue = FieldConstants.ESS_JNDI_EJB_RUNTIME)
     private String essRuntimeEjbJndi
 
     @Parameter(property = 'ess.server.timezone', required = true)
@@ -50,36 +48,44 @@ class JobScheduleMojo extends CommonMojo {
 
     private InitialContext context
 
+    private List<JobDefinition> newJobDefs = []
+    private List<JobDefinition> updatedJobDefs = []
+    private List<JobDefinition> canceledJobDefs = []
+    private List<RecurringSchedule> newSchedules = []
+    private List<RecurringSchedule> updatedSchedules = []
+    private List<JobRequest> newJobRequests = []
+    private List<JobRequest> updatedJobRequests = []
+
     void execute() throws MojoExecutionException, MojoFailureException {
         withContext {
             if (this.cleanFirst) {
                 cleanEverything()
             }
-            this.log
 
-            def reflections = getReflectionsUtility()
-            List<JobDefinition> newJobDefs = []
-            List<JobDefinition> updateJobDefs = []
-            List<JobDefinition> canceledJobDefs = []
             withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
                 def existingDefs = metadataWrapper.existingDefinitions
-                reflections.getSubTypesOf(JobDefinitionFactory).each { klass ->
-                    def jobDefFactory = klass.newInstance()
+                getSubTypesOf(JobDefinitionFactory).each { Class klass ->
+                    def jobDefFactory = klass.newInstance() as JobDefinitionFactory
                     def jobDef = jobDefFactory.createJobDefinition()
-                    def existingJob = existingDefs.contains(jobDef.name)
-                    if (existingJob && metadataWrapper.hasJobDefinitionTypeChanged(jobDef)) {
+                    def existingJob = existingDefs.contains(jobDef.name) ? metadataWrapper.getJobDefinition(
+                            jobDef.name) : null
+                    if (existingJob && existingJob.jobType != jobDef.jobType) {
                         this.log.info "Job definition ${jobDef.name} type has changed, therefore a new definition/requests must be created since ESS cannot update a job type..."
                         runtimeWrapper.cancelRequestsFor(jobDef)
                         canceledJobDefs << jobDef
                     } else if (existingJob) {
-                        updateJobDefs << jobDef
+                        if (existingJob != jobDef) {
+                            updatedJobDefs << jobDef
+                        } else {
+                            this.log.info "Job definition ${jobDef.name} has not changed, skipping update..."
+                        }
                     } else {
                         newJobDefs << jobDef
                     }
                 }
             }
 
-            cancelAndDeleteRequests(canceledJobDefs)
+            deleteRequestsAndDefinitions(canceledJobDefs)
             newJobDefs.addAll(canceledJobDefs)
 
             withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
@@ -87,7 +93,7 @@ class JobScheduleMojo extends CommonMojo {
                     this.log.info "Creating job definition ${jobDef.name}..."
                     metadataWrapper.createDefinition(jobDef)
                 }
-                updateJobDefs.each { jobDef ->
+                updatedJobDefs.each { jobDef ->
                     this.log.info "Updating job definition ${jobDef.name}..."
                     metadataWrapper.updateDefinition(jobDef)
                 }
@@ -95,43 +101,56 @@ class JobScheduleMojo extends CommonMojo {
                 this.log.info 'Job definitions complete'
 
                 def existingSchedules = metadataWrapper.existingSchedules
-                reflections.getSubTypesOf(ScheduleFactory).each { klass ->
-                    def scheduleFactory = klass.newInstance()
+                getSubTypesOf(ScheduleFactory).each { Class klass ->
+                    def scheduleFactory = klass.newInstance() as ScheduleFactory
                     def schedule = scheduleFactory.createSchedule()
                     logScheduleInfo(schedule)
                     if (existingSchedules.contains(schedule.name)) {
-                        // update
-                        this.log.info 'Updating schedule...'
-                        metadataWrapper.updateSchedule(schedule)
+                        if (metadataWrapper.existingScheduleMatches(schedule)) {
+                            this.log.info "Schedule ${schedule.name} has not changed, skipping update..."
+                        } else {
+                            this.updatedSchedules << schedule
+                            this.log.info 'Updating schedule...'
+                            metadataWrapper.updateSchedule(schedule)
+                        }
                     } else {
+                        this.newSchedules << schedule
                         this.log.info 'Creating schedule...'
                         metadataWrapper.createSchedule(schedule)
                     }
                 }
+                this.log.info 'Schedules complete'
             }
 
             // job requests are dependent on schedules+jobs being committed first
             withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
-                def existing = runtimeWrapper.existingJobRequests
-                reflections.getSubTypesOf(JobRequestFactory).each { klass ->
-                    def jobRequestFactory = klass.newInstance()
+                getSubTypesOf(JobRequestFactory).each { Class klass ->
+                    def jobRequestFactory = klass.newInstance() as JobRequestFactory
                     def jobRequest = jobRequestFactory.createJobRequest()
-                    def existingJobRequest = existing.find { data ->
-                        data.scheduleName == jobRequest.schedule.name && data.jobDefinitionName == jobRequest.jobDefinition.name
-                    }
-                    if (existingJobRequest) {
-                        this.log.info "Updating job request ${jobRequest.submissionNotes}..."
-                        runtimeWrapper.updateRequest(existingJobRequest)
+                    def existingJobRequests = runtimeWrapper.getExistingJobRequests(jobRequest.jobDefinition,
+                                                                                   jobRequest.schedule)
+                    if (existingJobRequests.any()) {
+                        assert existingJobRequests.size() == 1
+                        def existingJobRequest = existingJobRequests[0]
+                        if (!updatedSchedules.contains(jobRequest.schedule) && !updatedJobDefs.contains(jobRequest.jobDefinition)) {
+                            this.log.info "Job request '${jobRequest.submissionNotes}' will not be updated since schedule/job definition has not changed..."
+                        } else {
+                            this.updatedJobRequests << jobRequest
+                            this.log.info "Updating job request ${jobRequest.submissionNotes}..."
+                            runtimeWrapper.updateRequest(existingJobRequest)
+                        }
                     } else {
+                        this.newJobRequests << jobRequest
                         this.log.info "Creating job request ${jobRequest.submissionNotes}..."
                         runtimeWrapper.createRequest(jobRequest)
                     }
                 }
+                this.log.info 'Job requests complete'
             }
         }
     }
 
-    private void cancelAndDeleteRequests(List<JobDefinition> canceledJobDefs) {
+    private void deleteRequestsAndDefinitions(List<JobDefinition> canceledJobDefs) {
         // need 2 transactions for cancel/delete job type changes
         deployerWithRetries { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
             canceledJobDefs.each { jobDef ->

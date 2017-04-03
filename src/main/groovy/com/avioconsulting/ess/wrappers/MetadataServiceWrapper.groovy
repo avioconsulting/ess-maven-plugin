@@ -92,16 +92,21 @@ class MetadataServiceWrapper {
         this.service.deleteJobDefinition(this.handle, id)
     }
 
-    boolean hasJobDefinitionTypeChanged(JobDefinition jobDefinition) {
-        def oracle = getOracleJobDefinition(jobDefinition.name)
-        def existingJobTypeOracle = oracle.jobType.namePart
-        def existingJobTypeUs = JobDefMapper.reverseTypeMapping[existingJobTypeOracle]
-        existingJobTypeUs != jobDefinition.jobType
+    JobDefinition getJobDefinition(String name) {
+        def oracleDefinition = getOracleJobDefinition(name)
+        JobDefMapper.getAvioJobDefinition(oracleDefinition)
     }
 
     oracle.as.scheduler.JobDefinition getOracleJobDefinition(String name) {
         def id = getJobDefId name
         return this.service.getJobDefinition(this.handle, id, false)
+    }
+
+    boolean existingScheduleMatches(RecurringSchedule schedule) {
+        def existingSchedule = getOracleSchedule(schedule)
+        def proposedSchedule = this.scheduleMapper.getOracleSchedule(schedule)
+        // Oracle classes seem to implement equality well, which is simpler than reverse mapping Oracle schedules
+        existingSchedule == proposedSchedule
     }
 
     Schedule getOracleSchedule(RecurringSchedule schedule) {

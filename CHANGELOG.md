@@ -1,3 +1,8 @@
+# 1.0.5
+
+* Do not make changes if nothing has changed
+* More efficient querying of job requests to reduce deployment time
+
 # 1.0.4
 
 Don't fail on service handle cleanup (obscures original exception, just log error)

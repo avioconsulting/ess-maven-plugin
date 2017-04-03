@@ -40,7 +40,6 @@ public class EssPolicyNotifierBean implements EssPolicyNotifier {
     }
 
     private void log(List<String> logMessages, String message) {
-        // TODO: Log messages instead of println
         System.out.println(message);
         logMessages.add(message);
     }
