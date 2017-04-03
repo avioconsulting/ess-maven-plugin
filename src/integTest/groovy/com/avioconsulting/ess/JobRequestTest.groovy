@@ -16,7 +16,6 @@ import oracle.as.scheduler.RuntimeService
 import oracle.as.scheduler.State
 import org.joda.time.LocalDateTime
 import org.junit.Test
-import sun.misc.Request
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
@@ -83,12 +82,54 @@ class JobRequestTest extends Common {
     @Test
     void ExistingRequest_NothingChanged() {
         // arrange
+        this.factories[ScheduleFactory] = [SingleScheduleFactory]
+        this.factories[JobDefinitionFactory] = [SingleJobDefFactory]
+        def expectedJobDef = new SingleJobDefFactory().createJobDefinition()
+        def expectedSchedule = new SingleScheduleFactory().createSchedule()
+        DummyFactory.returnThis = new JobRequest(submissionNotes: 'the notes',
+                                                 jobDefinition: expectedJobDef,
+                                                 schedule: expectedSchedule)
+        this.factories[JobRequestFactory] = [DummyFactory]
+        def mojo = getJobScheduleMojo()
+        mojo.execute()
+        def childDetails = getJobRequestDetails(mojo,
+                                                expectedSchedule,
+                                                expectedJobDef,
+                                                JobRequestType.Child)
+        assertThat childDetails.size(),
+                   is(equalTo(1))
+        def detail = childDetails[0]
+        def existingJobRequestId = detail.requestId
+        println 'initial creation run complete'
+        mojo = getJobScheduleMojo()
 
         // act
+        mojo.execute()
 
         // assert
-        // TODO: Verify that the request ID doesn't change at all
-        fail 'write this'
+        assertThat mojo.newJobDefs,
+                   is(empty())
+        assertThat mojo.updateJobDefs,
+                   is(empty())
+        assertThat mojo.canceledJobDefs,
+                   is(empty())
+        assertThat mojo.newSchedules,
+                   is(empty())
+        assertThat mojo.updatedSchedules,
+                   is(empty())
+        assertThat mojo.newJobRequests,
+                   is(empty())
+        assertThat mojo.updatedJobRequests,
+                   is(empty())
+        childDetails = getJobRequestDetails(mojo,
+                                            expectedSchedule,
+                                            expectedJobDef,
+                                            JobRequestType.Child)
+        assertThat childDetails.size(),
+                   is(equalTo(1))
+        detail = childDetails[0]
+        assertThat detail.requestId,
+                   is(equalTo(existingJobRequestId))
     }
 
     @Test
