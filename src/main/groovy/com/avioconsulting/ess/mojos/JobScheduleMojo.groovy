@@ -132,9 +132,13 @@ class JobScheduleMojo extends CommonMojo {
                         data.scheduleName == jobRequest.schedule.name && data.jobDefinitionName == jobRequest.jobDefinition.name
                     }
                     if (existingJobRequest) {
-                        this.updatedJobRequests << jobRequest
-                        this.log.info "Updating job request ${jobRequest.submissionNotes}..."
-                        runtimeWrapper.updateRequest(existingJobRequest)
+                        if (!updatedSchedules.contains(jobRequest.schedule) && !updateJobDefs.contains(jobRequest.jobDefinition)) {
+                            this.log.info "Job request '${jobRequest.submissionNotes}' will not be updated since schedule/job definition has not changed..."
+                        } else {
+                            this.updatedJobRequests << jobRequest
+                            this.log.info "Updating job request ${jobRequest.submissionNotes}..."
+                            runtimeWrapper.updateRequest(existingJobRequest)
+                        }
                     } else {
                         this.newJobRequests << jobRequest
                         this.log.info "Creating job request ${jobRequest.submissionNotes}..."
