@@ -200,10 +200,6 @@ You can force deletion of ALL ESS data by running with the property `ess.clean.e
 
 Given that we already deploy an EJB service on the fly to handle WSM work, another method could be added that retrieves the server time zone automatically and avoids having to supply it as a Maven property.
 
-## Entropy
-
-The plugin will update existing objects every time it's run. Given that job requests have to be rebuilt for changing job definition parameters, the more job requests out there, the slower this process becomes. It might be nice to have the plugin compare the existing job def params+schedule with the new and only make updates is something has changed.
-
 ## Archetypes
 
 No archetype is currently available. This might be useful to speed up getting started.

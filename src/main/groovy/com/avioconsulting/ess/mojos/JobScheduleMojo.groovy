@@ -124,14 +124,14 @@ class JobScheduleMojo extends CommonMojo {
 
             // job requests are dependent on schedules+jobs being committed first
             withDeployerTransaction { MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
-                def existing = runtimeWrapper.existingJobRequests
                 getSubTypesOf(JobRequestFactory).each { Class klass ->
                     def jobRequestFactory = klass.newInstance() as JobRequestFactory
                     def jobRequest = jobRequestFactory.createJobRequest()
-                    def existingJobRequest = existing.find { data ->
-                        data.scheduleName == jobRequest.schedule.name && data.jobDefinitionName == jobRequest.jobDefinition.name
-                    }
-                    if (existingJobRequest) {
+                    def existingJobRequests = runtimeWrapper.getExistingJobRequests(jobRequest.jobDefinition,
+                                                                                   jobRequest.schedule)
+                    if (existingJobRequests.any()) {
+                        assert existingJobRequests.size() == 1
+                        def existingJobRequest = existingJobRequests[0]
                         if (!updatedSchedules.contains(jobRequest.schedule) && !updatedJobDefs.contains(jobRequest.jobDefinition)) {
                             this.log.info "Job request '${jobRequest.submissionNotes}' will not be updated since schedule/job definition has not changed..."
                         } else {
