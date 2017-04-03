@@ -55,7 +55,7 @@ class JobRequestTest extends Common {
         def expectedJobRequest = DummyFactory.returnThis
         assertThat mojo.newJobDefs,
                    is(equalTo([expectedJobDef]))
-        assertThat mojo.updateJobDefs,
+        assertThat mojo.updatedJobDefs,
                    is(empty())
         assertThat mojo.canceledJobDefs,
                    is(empty())
@@ -109,7 +109,7 @@ class JobRequestTest extends Common {
         // assert
         assertThat mojo.newJobDefs,
                    is(empty())
-        assertThat mojo.updateJobDefs,
+        assertThat mojo.updatedJobDefs,
                    is(empty())
         assertThat mojo.canceledJobDefs,
                    is(empty())
@@ -159,7 +159,7 @@ class JobRequestTest extends Common {
         def expectedJobRequest = DummyFactory.returnThis
         assertThat mojo.newJobDefs,
                    is(empty())
-        assertThat mojo.updateJobDefs,
+        assertThat mojo.updatedJobDefs,
                    is(equalTo([expectedUpdatedJobDef]))
         assertThat mojo.canceledJobDefs,
                    is(empty())
@@ -219,7 +219,7 @@ class JobRequestTest extends Common {
         def expectedJobRequest = DummyFactory.returnThis
         assertThat mojo.newJobDefs,
                    is(equalTo([expectedUpdatedJobDef]))
-        assertThat mojo.updateJobDefs,
+        assertThat mojo.updatedJobDefs,
                    is(empty())
         assertThat mojo.canceledJobDefs,
                    is(equalTo([expectedUpdatedJobDef]))
@@ -283,7 +283,7 @@ class JobRequestTest extends Common {
         def expectedJobRequest = DummyFactory.returnThis
         assertThat mojo.newJobDefs,
                    is(empty())
-        assertThat mojo.updateJobDefs,
+        assertThat mojo.updatedJobDefs,
                    is(empty())
         assertThat mojo.canceledJobDefs,
                    is(empty())

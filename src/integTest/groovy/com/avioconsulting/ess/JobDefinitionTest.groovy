@@ -21,7 +21,7 @@ class JobDefinitionTest extends Common {
         def expectedJobDef = new SingleJobDefFactory().createJobDefinition()
         assertThat mojo.newJobDefs,
                    is(equalTo([expectedJobDef]))
-        assertThat mojo.updateJobDefs,
+        assertThat mojo.updatedJobDefs,
                    is(empty())
         assertThat mojo.canceledJobDefs,
                    is(empty())
@@ -39,7 +39,7 @@ class JobDefinitionTest extends Common {
         mojo.execute()
 
         // assert
-        assertThat mojo.updateJobDefs,
+        assertThat mojo.updatedJobDefs,
                    is(empty())
         assertThat mojo.newJobDefs,
                    is(empty())
@@ -61,7 +61,7 @@ class JobDefinitionTest extends Common {
 
         // assert
         def expectedJobDef = new UpdatedJobDefFactory().createJobDefinition()
-        assertThat mojo.updateJobDefs,
+        assertThat mojo.updatedJobDefs,
                    is(equalTo([expectedJobDef]))
         assertThat mojo.newJobDefs,
                    is(empty())

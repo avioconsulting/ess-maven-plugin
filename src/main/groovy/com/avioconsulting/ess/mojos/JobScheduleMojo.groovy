@@ -49,7 +49,7 @@ class JobScheduleMojo extends CommonMojo {
     private InitialContext context
 
     private List<JobDefinition> newJobDefs = []
-    private List<JobDefinition> updateJobDefs = []
+    private List<JobDefinition> updatedJobDefs = []
     private List<JobDefinition> canceledJobDefs = []
     private List<RecurringSchedule> newSchedules = []
     private List<RecurringSchedule> updatedSchedules = []
@@ -75,7 +75,7 @@ class JobScheduleMojo extends CommonMojo {
                         canceledJobDefs << jobDef
                     } else if (existingJob) {
                         if (existingJob != jobDef) {
-                            updateJobDefs << jobDef
+                            updatedJobDefs << jobDef
                         } else {
                             this.log.info "Job definition ${jobDef.name} has not changed, skipping update..."
                         }
@@ -93,7 +93,7 @@ class JobScheduleMojo extends CommonMojo {
                     this.log.info "Creating job definition ${jobDef.name}..."
                     metadataWrapper.createDefinition(jobDef)
                 }
-                updateJobDefs.each { jobDef ->
+                updatedJobDefs.each { jobDef ->
                     this.log.info "Updating job definition ${jobDef.name}..."
                     metadataWrapper.updateDefinition(jobDef)
                 }
@@ -132,7 +132,7 @@ class JobScheduleMojo extends CommonMojo {
                         data.scheduleName == jobRequest.schedule.name && data.jobDefinitionName == jobRequest.jobDefinition.name
                     }
                     if (existingJobRequest) {
-                        if (!updatedSchedules.contains(jobRequest.schedule) && !updateJobDefs.contains(jobRequest.jobDefinition)) {
+                        if (!updatedSchedules.contains(jobRequest.schedule) && !updatedJobDefs.contains(jobRequest.jobDefinition)) {
                             this.log.info "Job request '${jobRequest.submissionNotes}' will not be updated since schedule/job definition has not changed..."
                         } else {
                             this.updatedJobRequests << jobRequest
