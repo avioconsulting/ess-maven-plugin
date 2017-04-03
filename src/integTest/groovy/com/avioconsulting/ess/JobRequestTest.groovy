@@ -65,6 +65,16 @@ class JobRequestTest extends Common {
                    is(equalTo([expectedJobRequest]))
         assertThat mojo.updatedJobRequests,
                    is(empty())
+        def childDetails = getJobRequestDetails(mojo,
+                                                expectedSchedule,
+                                                expectedJobDef,
+                                                JobRequestType.Child,
+                                                false)
+        assertThat childDetails.size(),
+                   is(equalTo(1))
+        def detail = childDetails[0]
+        assertThat detail.parameters.getValue(JobDefMapper.WSDL_OPERATION) as String,
+                   is(equalTo(expectedJobDef.operation))
     }
 
     @Test
@@ -119,7 +129,8 @@ class JobRequestTest extends Common {
         def childDetails = getJobRequestDetails(mojo,
                                                 expectedSchedule,
                                                 expectedUpdatedJobDef,
-                                                JobRequestType.Child)
+                                                JobRequestType.Child,
+                                                true)
         assertThat childDetails.size(),
                    is(equalTo(1))
         def detail = childDetails[0]
@@ -128,7 +139,8 @@ class JobRequestTest extends Common {
         def parentDetails = getJobRequestDetails(mojo,
                                                  expectedSchedule,
                                                  expectedUpdatedJobDef,
-                                                 JobRequestType.Parent)
+                                                 JobRequestType.Parent,
+                                                 true)
         assertThat parentDetails.size(),
                    is(equalTo(1))
         detail = parentDetails[0]
@@ -150,16 +162,13 @@ class JobRequestTest extends Common {
     List<RequestDetail> getJobRequestDetails(JobScheduleMojo mojo,
                                              RecurringSchedule expectedSchedule,
                                              JobDefinition expectedJobDef,
-                                             JobRequestType jobRequestType) {
+                                             JobRequestType jobRequestType,
+                                             boolean isUpdate) {
         def expectedRequestType = mapJobRequestType jobRequestType
         List<RequestDetail> results = null
         mojo.withContext {
             mojo.withDeployerTransaction {
                 MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
-                    def scheduleId = metadataWrapper.getScheduleId(expectedSchedule.name).toString()
-                    def scheduleFilter = new Filter(RuntimeService.QueryField.SCHEDULE.fieldName(),
-                                                    Filter.Comparator.EQUALS,
-                                                    scheduleId)
                     def jobDefId = metadataWrapper.getJobDefId(expectedJobDef.name).toString()
                     def jobDefFilter = new Filter(RuntimeService.QueryField.DEFINITION.fieldName(),
                                                   Filter.Comparator.EQUALS,
@@ -167,7 +176,15 @@ class JobRequestTest extends Common {
                     def requestTypeFilter = new Filter(RuntimeService.QueryField.REQUESTTYPE.fieldName(),
                                                        Filter.Comparator.EQUALS,
                                                        expectedRequestType)
-                    def combinedFilter = scheduleFilter & jobDefFilter & requestTypeFilter
+                    def combinedFilter = jobDefFilter & requestTypeFilter
+                    // schedules are not on child unless it's an update
+                    if (jobRequestType == JobRequestType.Parent || isUpdate) {
+                        def scheduleId = metadataWrapper.getScheduleId(expectedSchedule.name).toString()
+                        def scheduleFilter = new Filter(RuntimeService.QueryField.SCHEDULE.fieldName(),
+                                                        Filter.Comparator.EQUALS,
+                                                        scheduleId)
+                        combinedFilter = combinedFilter & scheduleFilter
+                    }
                     def runtimeService = runtimeWrapper.runtimeService
                     def requestIds = runtimeService.queryRequests(runtimeWrapper.handle,
                                                                   combinedFilter,
