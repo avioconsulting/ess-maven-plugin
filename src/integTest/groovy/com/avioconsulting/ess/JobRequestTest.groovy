@@ -10,9 +10,7 @@ import com.avioconsulting.ess.models.RecurringSchedule
 import com.avioconsulting.ess.mojos.JobScheduleMojo
 import com.avioconsulting.ess.wrappers.MetadataServiceWrapper
 import com.avioconsulting.ess.wrappers.RuntimeServiceWrapper
-import oracle.as.scheduler.Filter
-import oracle.as.scheduler.RequestDetail
-import oracle.as.scheduler.RuntimeService
+import oracle.as.scheduler.*
 import org.junit.Test
 
 import static org.hamcrest.Matchers.*
@@ -68,8 +66,8 @@ class JobRequestTest extends Common {
         def childDetails = getJobRequestDetails(mojo,
                                                 expectedSchedule,
                                                 expectedJobDef,
-                                                JobRequestType.Child,
-                                                false)
+                                                JobRequestType.Child
+        )
         assertThat childDetails.size(),
                    is(equalTo(1))
         def detail = childDetails[0]
@@ -84,6 +82,7 @@ class JobRequestTest extends Common {
         // act
 
         // assert
+        // TODO: Verify that the request ID doesn't change at all
         fail 'write this'
     }
 
@@ -129,8 +128,7 @@ class JobRequestTest extends Common {
         def childDetails = getJobRequestDetails(mojo,
                                                 expectedSchedule,
                                                 expectedUpdatedJobDef,
-                                                JobRequestType.Child,
-                                                true)
+                                                JobRequestType.Child)
         assertThat childDetails.size(),
                    is(equalTo(1))
         def detail = childDetails[0]
@@ -139,13 +137,86 @@ class JobRequestTest extends Common {
         def parentDetails = getJobRequestDetails(mojo,
                                                  expectedSchedule,
                                                  expectedUpdatedJobDef,
-                                                 JobRequestType.Parent,
-                                                 true)
+                                                 JobRequestType.Parent
+        )
         assertThat parentDetails.size(),
                    is(equalTo(1))
         detail = parentDetails[0]
         assertThat detail.parameters.getValue(JobDefMapper.WSDL_OPERATION) as String,
                    is(equalTo(expectedUpdatedJobDef.operation))
+    }
+
+    @Test
+    void ExistingRequest_JobTypeChanges_RecreatesWithoutError() {
+        // arrange
+        this.factories[ScheduleFactory] = [SingleScheduleFactory]
+        this.factories[JobDefinitionFactory] = [SingleJobDefFactory]
+        def expectedSchedule = new SingleScheduleFactory().createSchedule()
+        DummyFactory.returnThis = new JobRequest(submissionNotes: 'the notes',
+                                                 jobDefinition: new SingleJobDefFactory().createJobDefinition(),
+                                                 schedule: expectedSchedule)
+        this.factories[JobRequestFactory] = [DummyFactory]
+        def mojo = getJobScheduleMojo()
+        mojo.execute()
+        this.factories[JobDefinitionFactory] = [UpdatedJobTypeJobDefFactory]
+        def expectedUpdatedJobDef = new UpdatedJobTypeJobDefFactory().createJobDefinition()
+        DummyFactory.returnThis = new JobRequest(submissionNotes: 'the notes',
+                                                 jobDefinition: expectedUpdatedJobDef,
+                                                 schedule: expectedSchedule)
+        mojo = getJobScheduleMojo()
+
+        // act
+        println 'issuing 2nd execute call for update'
+        mojo.execute()
+
+        // assert
+        def expectedJobRequest = DummyFactory.returnThis
+        assertThat mojo.newJobDefs,
+                   is(equalTo([expectedUpdatedJobDef]))
+        assertThat mojo.updateJobDefs,
+                   is(empty())
+        assertThat mojo.canceledJobDefs,
+                   is(equalTo([expectedUpdatedJobDef]))
+        assertThat mojo.newSchedules,
+                   is(empty())
+        assertThat mojo.updatedSchedules,
+                   is(empty())
+        assertThat mojo.newJobRequests,
+                   is(equalTo([expectedJobRequest]))
+        assertThat mojo.updatedJobRequests,
+                   is(empty())
+        def childDetails = getJobRequestDetails(mojo,
+                                                expectedSchedule,
+                                                expectedUpdatedJobDef,
+                                                JobRequestType.Child)
+        assertThat childDetails.size(),
+                   is(equalTo(1))
+        def detail = childDetails[0]
+        def expectedJobTypeMetadataId = JobDefMapper.getOracleJobDef('http://stuff'.toURL(),
+                                                                     'the app',
+                                                                     expectedUpdatedJobDef).jobType
+        assertThat detail.jobType,
+                   is(equalTo(expectedJobTypeMetadataId))
+        def parentDetails = getJobRequestDetails(mojo,
+                                                 expectedSchedule,
+                                                 expectedUpdatedJobDef,
+                                                 JobRequestType.Parent
+        )
+        assertThat parentDetails.size(),
+                   is(equalTo(1))
+        detail = parentDetails[0]
+        assertThat detail.jobType,
+                   is(equalTo(expectedJobTypeMetadataId))
+    }
+
+    @Test
+    void ExistingRequest_ScheduleChanges_UpdatesWithoutError() {
+        // arrange
+
+        // act
+
+        // assert
+        fail 'write this'
     }
 
     int mapJobRequestType(JobRequestType jobRequestType) {
@@ -162,8 +233,7 @@ class JobRequestTest extends Common {
     List<RequestDetail> getJobRequestDetails(JobScheduleMojo mojo,
                                              RecurringSchedule expectedSchedule,
                                              JobDefinition expectedJobDef,
-                                             JobRequestType jobRequestType,
-                                             boolean isUpdate) {
+                                             JobRequestType jobRequestType) {
         def expectedRequestType = mapJobRequestType jobRequestType
         List<RequestDetail> results = null
         mojo.withContext {
@@ -176,15 +246,10 @@ class JobRequestTest extends Common {
                     def requestTypeFilter = new Filter(RuntimeService.QueryField.REQUESTTYPE.fieldName(),
                                                        Filter.Comparator.EQUALS,
                                                        expectedRequestType)
-                    def combinedFilter = jobDefFilter & requestTypeFilter
-                    // schedules are not on child unless it's an update
-                    if (jobRequestType == JobRequestType.Parent || isUpdate) {
-                        def scheduleId = metadataWrapper.getScheduleId(expectedSchedule.name).toString()
-                        def scheduleFilter = new Filter(RuntimeService.QueryField.SCHEDULE.fieldName(),
-                                                        Filter.Comparator.EQUALS,
-                                                        scheduleId)
-                        combinedFilter = combinedFilter & scheduleFilter
-                    }
+                    def stateFilter = new Filter(RuntimeService.QueryField.STATE.fieldName(),
+                                                 Filter.Comparator.NOT_EQUALS,
+                                                 State.CANCELLED.value())
+                    def combinedFilter = jobDefFilter & requestTypeFilter & stateFilter
                     def runtimeService = runtimeWrapper.runtimeService
                     def requestIds = runtimeService.queryRequests(runtimeWrapper.handle,
                                                                   combinedFilter,
@@ -195,26 +260,9 @@ class JobRequestTest extends Common {
                     }
             }
         }
-        results
-    }
-
-    @Test
-    void ExistingRequest_JobTypeChanges_RecreatesWithoutError() {
-        // arrange
-
-        // act
-
-        // assert
-        fail 'write this'
-    }
-
-    @Test
-    void ExistingRequest_ScheduleChanges_UpdatesWithoutError() {
-        // arrange
-
-        // act
-
-        // assert
-        fail 'write this'
+        // can't reliably query by schedule name so do it after we get results back
+        results.findAll { details ->
+            details.schedule.name == expectedSchedule.name
+        }
     }
 }
