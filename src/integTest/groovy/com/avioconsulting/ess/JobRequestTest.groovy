@@ -3,13 +3,28 @@ package com.avioconsulting.ess
 import com.avioconsulting.ess.factories.JobDefinitionFactory
 import com.avioconsulting.ess.factories.JobRequestFactory
 import com.avioconsulting.ess.factories.ScheduleFactory
+import com.avioconsulting.ess.mappers.JobDefMapper
+import com.avioconsulting.ess.models.JobDefinition
 import com.avioconsulting.ess.models.JobRequest
+import com.avioconsulting.ess.models.RecurringSchedule
+import com.avioconsulting.ess.mojos.JobScheduleMojo
+import com.avioconsulting.ess.wrappers.MetadataServiceWrapper
+import com.avioconsulting.ess.wrappers.RuntimeServiceWrapper
+import oracle.as.scheduler.Filter
+import oracle.as.scheduler.RequestDetail
+import oracle.as.scheduler.RuntimeService
 import org.junit.Test
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
+@SuppressWarnings("GroovyAccessibility")
 class JobRequestTest extends Common {
+    enum JobRequestType {
+        Parent,
+        Child
+    }
+
     class DummyFactory implements JobRequestFactory {
         static JobRequest returnThis
 
@@ -75,9 +90,9 @@ class JobRequestTest extends Common {
         def mojo = getJobScheduleMojo()
         mojo.execute()
         this.factories[JobDefinitionFactory] = [UpdatedJobDefFactory]
-        def expectedJobDef = new UpdatedJobDefFactory().createJobDefinition()
+        def expectedUpdatedJobDef = new UpdatedJobDefFactory().createJobDefinition()
         DummyFactory.returnThis = new JobRequest(submissionNotes: 'the notes',
-                                                 jobDefinition: expectedJobDef,
+                                                 jobDefinition: expectedUpdatedJobDef,
                                                  schedule: expectedSchedule)
         mojo = getJobScheduleMojo()
 
@@ -90,7 +105,7 @@ class JobRequestTest extends Common {
         assertThat mojo.newJobDefs,
                    is(empty())
         assertThat mojo.updateJobDefs,
-                   is(equalTo([expectedJobDef]))
+                   is(equalTo([expectedUpdatedJobDef]))
         assertThat mojo.canceledJobDefs,
                    is(empty())
         assertThat mojo.newSchedules,
@@ -101,6 +116,69 @@ class JobRequestTest extends Common {
                    is(empty())
         assertThat mojo.updatedJobRequests,
                    is(equalTo([expectedJobRequest]))
+        def childDetails = getJobRequestDetails(mojo,
+                                                expectedSchedule,
+                                                expectedUpdatedJobDef,
+                                                JobRequestType.Child)
+        assertThat childDetails.size(),
+                   is(equalTo(1))
+        def detail = childDetails[0]
+        assertThat detail.parameters.getValue(JobDefMapper.WSDL_OPERATION) as String,
+                   is(equalTo(expectedUpdatedJobDef.operation))
+        def parentDetails = getJobRequestDetails(mojo,
+                                                 expectedSchedule,
+                                                 expectedUpdatedJobDef,
+                                                 JobRequestType.Parent)
+        assertThat parentDetails.size(),
+                   is(equalTo(1))
+        detail = parentDetails[0]
+        assertThat detail.parameters.getValue(JobDefMapper.WSDL_OPERATION) as String,
+                   is(equalTo(expectedUpdatedJobDef.operation))
+    }
+
+    int mapJobRequestType(JobRequestType jobRequestType) {
+        switch (jobRequestType) {
+            case JobRequestType.Child:
+                return 3
+            case JobRequestType.Parent:
+                return 2
+            default:
+                throw new Exception("Unmapped request type ${jobRequestType}")
+        }
+    }
+
+    List<RequestDetail> getJobRequestDetails(JobScheduleMojo mojo,
+                                             RecurringSchedule expectedSchedule,
+                                             JobDefinition expectedJobDef,
+                                             JobRequestType jobRequestType) {
+        def expectedRequestType = mapJobRequestType jobRequestType
+        List<RequestDetail> results = null
+        mojo.withContext {
+            mojo.withDeployerTransaction {
+                MetadataServiceWrapper metadataWrapper, RuntimeServiceWrapper runtimeWrapper ->
+                    def scheduleId = metadataWrapper.getScheduleId(expectedSchedule.name).toString()
+                    def scheduleFilter = new Filter(RuntimeService.QueryField.SCHEDULE.fieldName(),
+                                                    Filter.Comparator.EQUALS,
+                                                    scheduleId)
+                    def jobDefId = metadataWrapper.getJobDefId(expectedJobDef.name).toString()
+                    def jobDefFilter = new Filter(RuntimeService.QueryField.DEFINITION.fieldName(),
+                                                  Filter.Comparator.EQUALS,
+                                                  jobDefId)
+                    def requestTypeFilter = new Filter(RuntimeService.QueryField.REQUESTTYPE.fieldName(),
+                                                       Filter.Comparator.EQUALS,
+                                                       expectedRequestType)
+                    def combinedFilter = scheduleFilter & jobDefFilter & requestTypeFilter
+                    def runtimeService = runtimeWrapper.runtimeService
+                    def requestIds = runtimeService.queryRequests(runtimeWrapper.handle,
+                                                                  combinedFilter,
+                                                                  null,
+                                                                  true)
+                    results = requestIds.collect { long requestId ->
+                        runtimeService.getRequestDetail(runtimeWrapper.handle, requestId, true)
+                    }
+            }
+        }
+        results
     }
 
     @Test

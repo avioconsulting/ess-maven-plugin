@@ -7,6 +7,7 @@ import com.avioconsulting.ess.mojos.JobScheduleMojo
 import com.avioconsulting.ess.wrappers.MetadataServiceWrapper
 import org.junit.Before
 
+@SuppressWarnings("GroovyAccessibility")
 abstract class Common {
     static final String hostname = System.getProperty('weblogic.hostname') ?: 'localhost'
     static final String port = System.getProperty('weblogic.port') ?: '8001'
