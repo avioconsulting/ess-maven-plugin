@@ -10,8 +10,13 @@ import com.avioconsulting.ess.models.RecurringSchedule
 import com.avioconsulting.ess.mojos.JobScheduleMojo
 import com.avioconsulting.ess.wrappers.MetadataServiceWrapper
 import com.avioconsulting.ess.wrappers.RuntimeServiceWrapper
-import oracle.as.scheduler.*
+import oracle.as.scheduler.Filter
+import oracle.as.scheduler.RequestDetail
+import oracle.as.scheduler.RuntimeService
+import oracle.as.scheduler.State
+import org.joda.time.LocalDateTime
 import org.junit.Test
+import sun.misc.Request
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
@@ -212,11 +217,53 @@ class JobRequestTest extends Common {
     @Test
     void ExistingRequest_ScheduleChanges_UpdatesWithoutError() {
         // arrange
+        this.factories[ScheduleFactory] = [SingleScheduleFactory]
+        this.factories[JobDefinitionFactory] = [SingleJobDefFactory]
+        def originalSchedule = new SingleScheduleFactory().createSchedule()
+        def jobDefinition = new SingleJobDefFactory().createJobDefinition()
+        DummyFactory.returnThis = new JobRequest(submissionNotes: 'the notes',
+                                                 jobDefinition: jobDefinition,
+                                                 schedule: originalSchedule)
+        this.factories[JobRequestFactory] = [DummyFactory]
+        def mojo = getJobScheduleMojo()
+        mojo.execute()
+        this.factories[ScheduleFactory] = [UpdatedScheduleFactory]
+        def expectedUpdatedSchedule = new UpdatedScheduleFactory().createSchedule()
+        DummyFactory.returnThis = new JobRequest(submissionNotes: 'the notes',
+                                                 jobDefinition: jobDefinition,
+                                                 schedule: expectedUpdatedSchedule)
+        mojo = getJobScheduleMojo()
 
         // act
+        println 'issuing 2nd execute call for update'
+        mojo.execute()
 
         // assert
-        fail 'write this'
+        def expectedJobRequest = DummyFactory.returnThis
+        assertThat mojo.newJobDefs,
+                   is(empty())
+        assertThat mojo.updateJobDefs,
+                   is(empty())
+        assertThat mojo.canceledJobDefs,
+                   is(empty())
+        assertThat mojo.newSchedules,
+                   is(empty())
+        assertThat mojo.updatedSchedules,
+                   is(equalTo([expectedUpdatedSchedule]))
+        assertThat mojo.newJobRequests,
+                   is(empty())
+        assertThat mojo.updatedJobRequests,
+                   is(equalTo([expectedJobRequest]))
+        def childDetails = getJobRequestDetails(mojo,
+                                                expectedUpdatedSchedule,
+                                                jobDefinition,
+                                                JobRequestType.Child)
+        assertThat childDetails.size(),
+                   is(equalTo(1))
+        def detail = childDetails[0]
+        // see updated schedule, orig schedule ran on 1/1
+        assertThat new LocalDateTime(detail.scheduledTime).toString(),
+                   is(equalTo('2025-01-02T08:15:10.000'))
     }
 
     int mapJobRequestType(JobRequestType jobRequestType) {
