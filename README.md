@@ -206,6 +206,10 @@ You can force deletion of ALL ESS data by running with the property `ess.clean.e
 
 Given that we already deploy an EJB service on the fly to handle WSM work, another method could be added that retrieves the server time zone automatically and avoids having to supply it as a Maven property.
 
+## Hold/release
+
+Currently if you choose to hold ESS requests using the property `ess.hold.requests` property and then release/use normal operations by omitting that property, the code does not see the schedule as 'updated' and thus the code to release them does not run. The hold/release code needs to be a separate operation/method independent from job request updates.
+
 ## Archetypes
 
 No archetype is currently available. This might be useful to speed up getting started.
